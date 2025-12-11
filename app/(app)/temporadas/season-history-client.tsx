@@ -42,7 +42,6 @@ export function SeasonHistoryClient({ seasons, matches, profiles }: SeasonHistor
         matches: seasonMatches,
         totalMatches: seasonMatches.length,
         playerStats: sortedStats,
-        topPlayers: sortedStats.slice(0, 10),
       }
     })
   }, [seasons, matches, profiles])
@@ -136,14 +135,14 @@ export function SeasonHistoryClient({ seasons, matches, profiles }: SeasonHistor
               </div>
             </div>
 
-            {selectedStats.topPlayers.length > 0 && (
+            {selectedStats.playerStats.length > 0 && (
               <div className="pt-4 border-t">
                 <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
                   <Users className="h-4 w-4" />
-                  Ranking de Jugadores
+                  Ranking de Jugadores ({selectedStats.playerStats.length} jugadores)
                 </h4>
                 <div className="space-y-2">
-                  {selectedStats.topPlayers.map((player, index) => (
+                  {selectedStats.playerStats.map((player, index) => (
                     <div
                       key={player.id}
                       className="flex items-center justify-between p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
