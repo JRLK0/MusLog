@@ -15,9 +15,15 @@ export const metadata: Metadata = {
   title: "MusLog - Registro de Partidas",
   description: "Aplicación para registrar y gestionar partidas de Mus entre amigos",
   generator: "v0.app",
+  manifest: "/manifest.json",
   icons: {
     icon: "/MusLog.png",
     apple: "/MusLog.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "MusLog",
   },
 }
 

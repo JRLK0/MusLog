@@ -3,8 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "next build",
-    "dev": "next dev",
+    "build": "next build --webpack",
+    "dev": "next dev --webpack",
+    "dev:pwa": "set ENABLE_PWA=1&& next dev --webpack",
     "lint": "eslint .",
     "start": "next start"
   },
@@ -49,6 +50,7 @@
     "input-otp": "1.4.1",
     "lucide-react": "^0.454.0",
     "next": "16.0.7",
+    "next-pwa": "^5.6.0",
     "next-themes": "^0.4.6",
     "react": "19.2.0",
     "react-day-picker": "9.8.0",
