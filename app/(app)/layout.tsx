@@ -51,9 +51,24 @@ export default async function AppLayout({
     )
   }
 
+  let pendingUsersCount = 0
+  if (profile?.is_admin) {
+    const { count } = await supabase
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending")
+
+    pendingUsersCount = count || 0
+  }
+
   return (
     <div className="flex min-h-svh flex-col pb-16">
-      <Header title="Mus Tracker" userName={profile?.name} />
+      <Header
+        title="Mus Tracker"
+        userName={profile?.name}
+        isAdmin={profile?.is_admin}
+        pendingUsersCount={pendingUsersCount}
+      />
       <main className="flex-1">{children}</main>
       <BottomNav isAdmin={profile?.is_admin} />
     </div>

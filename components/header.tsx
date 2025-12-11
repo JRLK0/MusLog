@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { LogOut, User, Settings } from "lucide-react"
+import { LogOut, User, Settings, Shield, AlertCircle } from "lucide-react"
 import { useRouter } from "next/navigation"
 import {
   DropdownMenu,
@@ -16,9 +16,11 @@ import {
 interface HeaderProps {
   title: string
   userName?: string
+  isAdmin?: boolean
+  pendingUsersCount?: number
 }
 
-export function Header({ title, userName }: HeaderProps) {
+export function Header({ title, userName, isAdmin = false, pendingUsersCount = 0 }: HeaderProps) {
   const router = useRouter()
 
   const handleLogout = async () => {
@@ -36,32 +38,51 @@ export function Header({ title, userName }: HeaderProps) {
           </div>
           <h1 className="text-lg font-semibold">{title}</h1>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-9 w-9">
-              <User className="h-5 w-5" />
+        <div className="flex items-center gap-2">
+          {isAdmin && pendingUsersCount > 0 && (
+            <Button variant="ghost" size="icon" className="h-9 w-9 relative" onClick={() => router.push("/admin")}>
+              <AlertCircle className="h-5 w-5 text-amber-600" />
+              <span className="absolute top-0 right-0 h-5 w-5 text-xs flex items-center justify-center bg-amber-600 text-white rounded-full">
+                {pendingUsersCount}
+              </span>
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            {userName && (
-              <>
-                <DropdownMenuLabel className="font-normal">
-                  <p className="text-sm font-medium">{userName}</p>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-              </>
-            )}
-            <DropdownMenuItem onClick={() => router.push("/perfil")}>
-              <Settings className="mr-2 h-4 w-4" />
-              Mi perfil
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout} className="text-red-600">
-              <LogOut className="mr-2 h-4 w-4" />
-              Cerrar sesión
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9">
+                <User className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              {userName && (
+                <>
+                  <DropdownMenuLabel className="font-normal">
+                    <p className="text-sm font-medium">{userName}</p>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                </>
+              )}
+              <DropdownMenuItem onClick={() => router.push("/perfil")}>
+                <Settings className="mr-2 h-4 w-4" />
+                Mi perfil
+              </DropdownMenuItem>
+              {isAdmin && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => router.push("/admin")}>
+                    <Shield className="mr-2 h-4 w-4" />
+                    Panel de admin
+                  </DropdownMenuItem>
+                </>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                <LogOut className="mr-2 h-4 w-4" />
+                Cerrar sesión
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </header>
   )
