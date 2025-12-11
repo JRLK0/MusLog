@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import type { Profile } from "@/lib/types"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -15,9 +15,27 @@ interface AllUsersTabProps {
 
 export function AllUsersTab({ users }: AllUsersTabProps) {
   const [processingId, setProcessingId] = useState<string | null>(null)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const router = useRouter()
 
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        setCurrentUserId(user.id)
+      }
+    }
+    getCurrentUser()
+  }, [])
+
   const toggleAdmin = async (userId: string, currentIsAdmin: boolean) => {
+    // Prevenir que el admin se quite admin a sí mismo
+    if (currentIsAdmin && userId === currentUserId) {
+      alert("No puedes quitarte el rol de admin a ti mismo")
+      return
+    }
+
     setProcessingId(userId)
     try {
       const supabase = createClient()
@@ -68,10 +86,11 @@ export function AllUsersTab({ users }: AllUsersTabProps) {
                 </div>
                 <Button
                   onClick={() => toggleAdmin(user.id, user.is_admin)}
-                  disabled={processingId === user.id}
+                  disabled={processingId === user.id || (user.is_admin && user.id === currentUserId)}
                   variant="outline"
                   size="sm"
                   className={user.is_admin ? "text-red-600" : "text-blue-600"}
+                  title={user.is_admin && user.id === currentUserId ? "No puedes quitarte el rol de admin a ti mismo" : undefined}
                 >
                   {user.is_admin ? (
                     <>
