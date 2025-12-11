@@ -50,6 +50,24 @@ export function PendingMatchesTab({ matches }: PendingMatchesTabProps) {
         const team2Players = [match.player3, match.player4]
         const isTeam1Winner = match.winner_team === 1
 
+        // Obtener información de validaciones
+        const validations = match.validations || []
+        const allPlayers = [match.player1, match.player2, match.player3, match.player4]
+        
+        const validatedPlayers = validations
+          .filter((v) => v.validated)
+          .map((v) => v.player?.name || allPlayers.find((p) => p?.id === v.player_id)?.name)
+          .filter(Boolean)
+        
+        const pendingPlayers = allPlayers
+          .filter((p) => {
+            if (!p) return false
+            const validation = validations.find((v) => v.player_id === p.id)
+            return !validation || !validation.validated
+          })
+          .map((p) => p?.name)
+          .filter(Boolean)
+
         return (
           <Card key={match.id} className="border-0 shadow-sm">
             <CardContent className="p-4 space-y-3">
@@ -80,6 +98,24 @@ export function PendingMatchesTab({ matches }: PendingMatchesTabProps) {
                   <span className="font-bold">{match.team2_score}</span>
                 </div>
               </div>
+
+              {/* Estado de validaciones */}
+              {validations.length > 0 && (
+                <div className="space-y-1 pt-2 border-t">
+                  {validatedPlayers.length > 0 && (
+                    <div className="text-xs">
+                      <span className="text-muted-foreground">Validado por: </span>
+                      <span className="font-medium text-emerald-600">{validatedPlayers.join(", ")}</span>
+                    </div>
+                  )}
+                  {pendingPlayers.length > 0 && (
+                    <div className="text-xs">
+                      <span className="text-muted-foreground">Pendiente: </span>
+                      <span className="font-medium text-amber-600">{pendingPlayers.join(", ")}</span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Actions */}
               <div className="flex gap-2">

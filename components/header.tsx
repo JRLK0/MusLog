@@ -18,9 +18,16 @@ interface HeaderProps {
   userName?: string
   isAdmin?: boolean
   pendingUsersCount?: number
+  activeSeasonName?: string | null
 }
 
-export function Header({ title, userName, isAdmin = false, pendingUsersCount = 0 }: HeaderProps) {
+export function Header({
+  title,
+  userName,
+  isAdmin = false,
+  pendingUsersCount = 0,
+  activeSeasonName = null,
+}: HeaderProps) {
   const router = useRouter()
 
   const handleLogout = async () => {
@@ -36,7 +43,12 @@ export function Header({ title, userName, isAdmin = false, pendingUsersCount = 0
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100">
             <span className="text-sm font-bold text-emerald-700">M</span>
           </div>
-          <h1 className="text-lg font-semibold">{title}</h1>
+          <div className="flex flex-col">
+            <h1 className="text-lg font-semibold">{title}</h1>
+            <span className="text-xs text-muted-foreground">
+              {activeSeasonName || "Temporada no activada aún"}
+            </span>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {isAdmin && pendingUsersCount > 0 && (

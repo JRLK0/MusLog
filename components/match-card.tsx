@@ -7,9 +7,15 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
-import { CheckCircle, Clock, Trophy, XCircle } from "lucide-react"
+import { CheckCircle, Clock, Trophy, XCircle, ChevronDown } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 interface MatchCardProps {
   match: Match
@@ -27,12 +33,43 @@ export function MatchCard({ match, currentUserId, isAdmin }: MatchCardProps) {
   const team2Players = [match.player3, match.player4]
   const isTeam1Winner = match.winner_team === 1
 
-  const handleValidate = async () => {
+  // Obtener información de validaciones
+  const validations = match.validations || []
+  const allPlayers = [match.player1, match.player2, match.player3, match.player4]
+  
+  const validatedPlayers = validations
+    .filter((v) => v.validated)
+    .map((v) => v.player?.name || allPlayers.find((p) => p?.id === v.player_id)?.name)
+    .filter(Boolean)
+  
+  const pendingPlayers = allPlayers
+    .filter((p) => {
+      if (!p) return false
+      const validation = validations.find((v) => v.player_id === p.id)
+      return !validation || !validation.validated
+    })
+    .map((p) => p?.name)
+    .filter(Boolean)
+
+  const currentUserValidation = validations.find((v) => v.player_id === currentUserId)
+  const hasCurrentUserValidated = currentUserValidation?.validated || false
+
+  // Determinar quién validó la partida si está validada
+  const allPlayersValidated = validatedPlayers.length === 4
+  const validatedByInfo = match.status === "validated" 
+    ? (allPlayersValidated 
+        ? `Validada por todos los jugadores: ${validatedPlayers.join(", ")}`
+        : validatedPlayers.length > 0
+          ? `Validada por admin (jugadores que validaron: ${validatedPlayers.join(", ")})`
+          : "Validada por admin")
+    : null
+
+  const handleValidate = async (asAdmin: boolean = false) => {
     setIsValidating(true)
     try {
       const supabase = createClient()
 
-      if (isAdmin) {
+      if (asAdmin) {
         // Admin validates the match directly
         await supabase
           .from("matches")
@@ -121,15 +158,85 @@ export function MatchCard({ match, currentUserId, isAdmin }: MatchCardProps) {
         <div className="px-4 pb-4 space-y-3">
           <p className="text-xs text-muted-foreground">Registrada por {match.creator?.name}</p>
 
+          {/* Mostrar quién validó si la partida está validada */}
+          {match.status === "validated" && validatedByInfo && (
+            <div className="text-xs pt-1 border-t">
+              <span className="text-muted-foreground">✓ </span>
+              <span className="font-medium text-emerald-600">{validatedByInfo}</span>
+            </div>
+          )}
+
+          {/* Mostrar estado de validaciones si la partida está pendiente */}
+          {match.status === "pending" && validations.length > 0 && (
+            <div className="space-y-2">
+              {validatedPlayers.length > 0 && (
+                <div className="text-xs">
+                  <span className="text-muted-foreground">Validado por: </span>
+                  <span className="font-medium text-emerald-600">{validatedPlayers.join(", ")}</span>
+                </div>
+              )}
+              {pendingPlayers.length > 0 && (
+                <div className="text-xs">
+                  <span className="text-muted-foreground">Pendiente: </span>
+                  <span className="font-medium text-amber-600">{pendingPlayers.join(", ")}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Botones de validación */}
           {match.status === "pending" && (isParticipant || isAdmin) && (
-            <Button
-              onClick={handleValidate}
-              disabled={isValidating}
-              size="sm"
-              className="w-full bg-emerald-600 hover:bg-emerald-700"
-            >
-              {isValidating ? "Validando..." : isAdmin ? "Validar como admin" : "Validar mi participación"}
-            </Button>
+            <div className="space-y-2">
+              {isAdmin && isParticipant && !hasCurrentUserValidated ? (
+                // Admin que participa y no ha validado: mostrar dropdown con ambas opciones
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      disabled={isValidating}
+                      size="sm"
+                      className="w-full bg-emerald-600 hover:bg-emerald-700"
+                    >
+                      {isValidating ? "Validando..." : "Validar"}
+                      <ChevronDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem
+                      onClick={() => handleValidate(false)}
+                      disabled={isValidating}
+                    >
+                      Validar mi participación
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleValidate(true)}
+                      disabled={isValidating}
+                    >
+                      Validar como admin
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : isAdmin && !isParticipant ? (
+                // Admin que no participa: solo puede validar como admin
+                <Button
+                  onClick={() => handleValidate(true)}
+                  disabled={isValidating}
+                  size="sm"
+                  className="w-full bg-emerald-600 hover:bg-emerald-700"
+                >
+                  {isValidating ? "Validando..." : "Validar como admin"}
+                </Button>
+              ) : isParticipant && !hasCurrentUserValidated ? (
+                // Participante normal: validar participación
+                <Button
+                  onClick={() => handleValidate(false)}
+                  disabled={isValidating}
+                  size="sm"
+                  className="w-full bg-emerald-600 hover:bg-emerald-700"
+                >
+                  {isValidating ? "Validando..." : "Validar mi participación"}
+                </Button>
+              ) : null}
+            </div>
           )}
         </div>
       </CardContent>

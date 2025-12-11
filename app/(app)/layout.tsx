@@ -61,6 +61,13 @@ export default async function AppLayout({
     pendingUsersCount = count || 0
   }
 
+  // Get active season
+  const { data: activeSeason } = await supabase
+    .from("seasons")
+    .select("name")
+    .eq("is_active", true)
+    .single()
+
   return (
     <div className="flex min-h-svh flex-col pb-16">
       <Header
@@ -68,6 +75,7 @@ export default async function AppLayout({
         userName={profile?.name}
         isAdmin={profile?.is_admin}
         pendingUsersCount={pendingUsersCount}
+        activeSeasonName={activeSeason?.name || null}
       />
       <main className="flex-1">{children}</main>
       <BottomNav isAdmin={profile?.is_admin} />

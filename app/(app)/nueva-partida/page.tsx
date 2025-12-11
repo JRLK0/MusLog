@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useRouter } from "next/navigation"
 import type { Profile } from "@/lib/types"
-import { Trophy, Users } from "lucide-react"
+import { Trophy, Users, AlertCircle } from "lucide-react"
 
 export default function NuevaPartidaPage() {
   const [players, setPlayers] = useState<Profile[]>([])
@@ -25,6 +25,7 @@ export default function NuevaPartidaPage() {
   const [playedAt, setPlayedAt] = useState(new Date().toISOString().slice(0, 16))
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [activeSeasonName, setActiveSeasonName] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -37,6 +38,23 @@ export default function NuevaPartidaPage() {
       }
     }
     fetchPlayers()
+  }, [])
+
+  const [hasActiveSeason, setHasActiveSeason] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    async function fetchActiveSeason() {
+      const supabase = createClient()
+      const { data } = await supabase.from("seasons").select("name").eq("is_active", true).single()
+
+      if (data) {
+        setActiveSeasonName(data.name)
+        setHasActiveSeason(true)
+      } else {
+        setHasActiveSeason(false)
+      }
+    }
+    fetchActiveSeason()
   }, [])
 
   const selectedPlayers = [player1, player2, player3, player4].filter(Boolean)
@@ -96,6 +114,35 @@ export default function NuevaPartidaPage() {
     return players.filter((p) => p.id === currentSelection || !selectedPlayers.includes(p.id))
   }
 
+  // Si no hay temporada activa, mostrar aviso
+  if (hasActiveSeason === false) {
+    return (
+      <div className="p-4">
+        <Card className="border-0 shadow-sm border-amber-200 border-2">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100">
+                  <AlertCircle className="h-6 w-6 text-amber-600" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold mb-2">Temporada no activada</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  No se puede registrar una partida porque no hay una temporada activa. Por favor, contacta con un
+                  administrador para que active una temporada.
+                </p>
+                <Button variant="outline" onClick={() => router.push("/temporadas")}>
+                  Ver temporadas
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="p-4 space-y-4">
       <Card className="border-0 shadow-sm">
@@ -104,7 +151,14 @@ export default function NuevaPartidaPage() {
             <Trophy className="h-5 w-5 text-emerald-600" />
             Nueva Partida
           </CardTitle>
-          <CardDescription>Registra una nueva partida de Mus</CardDescription>
+          <CardDescription>
+            Registra una nueva partida de Mus
+            {activeSeasonName && (
+              <span className="block mt-1 text-xs text-emerald-600 font-medium">
+                Temporada activa: {activeSeasonName}
+              </span>
+            )}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">

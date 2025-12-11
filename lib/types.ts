@@ -8,6 +8,18 @@ export interface Profile {
   updated_at: string
 }
 
+export interface Season {
+  id: string
+  name: string
+  start_date: string
+  end_date: string | null
+  is_active: boolean
+  created_by: string
+  created_at: string
+  updated_at: string
+  creator?: Profile
+}
+
 export interface Match {
   id: string
   created_by: string
@@ -20,6 +32,7 @@ export interface Match {
   status: "pending" | "validated" | "rejected"
   team1_score: number
   team2_score: number
+  season_id?: string | null
   created_at: string
   updated_at: string
   // Joined data
@@ -28,6 +41,8 @@ export interface Match {
   player3?: Profile
   player4?: Profile
   creator?: Profile
+  season?: Season
+  validations?: MatchValidation[]
 }
 
 export interface MatchValidation {
@@ -37,6 +52,7 @@ export interface MatchValidation {
   validated: boolean
   validated_at: string | null
   created_at: string
+  player?: Profile
 }
 
 export interface PlayerStats {

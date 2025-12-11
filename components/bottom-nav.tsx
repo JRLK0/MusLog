@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, PlusCircle, Users, Shield } from "lucide-react"
+import { Home, PlusCircle, Calendar, Shield } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface BottomNavProps {
@@ -15,7 +15,7 @@ export function BottomNav({ isAdmin = false }: BottomNavProps) {
   const navItems = [
     { href: "/partidas", label: "Partidas", icon: Home },
     { href: "/nueva-partida", label: "Nueva", icon: PlusCircle },
-    { href: "/jugadores", label: "Jugadores", icon: Users },
+    { href: "/temporadas", label: "Temporada", icon: Calendar },
     ...(isAdmin ? [{ href: "/admin", label: "Admin", icon: Shield }] : []),
   ]
 

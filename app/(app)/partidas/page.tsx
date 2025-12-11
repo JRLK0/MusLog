@@ -16,7 +16,16 @@ export default async function PartidasPage() {
       player2:profiles!matches_player2_id_fkey(id, name),
       player3:profiles!matches_player3_id_fkey(id, name),
       player4:profiles!matches_player4_id_fkey(id, name),
-      creator:profiles!matches_created_by_fkey(id, name)
+      creator:profiles!matches_created_by_fkey(id, name),
+      season:seasons(id, name, is_active),
+      validations:match_validations(
+        id,
+        player_id,
+        validated,
+        validated_at,
+        created_at,
+        player:profiles(id, name)
+      )
     `)
     .order("played_at", { ascending: false })
 

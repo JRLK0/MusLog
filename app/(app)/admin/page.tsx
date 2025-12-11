@@ -39,14 +39,48 @@ export default async function AdminPage() {
       player2:profiles!matches_player2_id_fkey(id, name),
       player3:profiles!matches_player3_id_fkey(id, name),
       player4:profiles!matches_player4_id_fkey(id, name),
-      creator:profiles!matches_created_by_fkey(id, name)
+      creator:profiles!matches_created_by_fkey(id, name),
+      validations:match_validations(
+        id,
+        player_id,
+        validated,
+        validated_at,
+        created_at,
+        player:profiles(id, name)
+      )
     `)
     .eq("status", "pending")
     .order("created_at", { ascending: false })
 
+  // Get active season
+  const { data: activeSeason } = await supabase
+    .from("seasons")
+    .select(`
+      *,
+      creator:profiles!seasons_created_by_fkey(id, name)
+    `)
+    .eq("is_active", true)
+    .single()
+
+  // Get closed seasons
+  const { data: closedSeasons } = await supabase
+    .from("seasons")
+    .select(`
+      *,
+      creator:profiles!seasons_created_by_fkey(id, name)
+    `)
+    .eq("is_active", false)
+    .order("end_date", { ascending: false })
+
   return (
     <div className="p-4">
-      <AdminTabs pendingUsers={pendingUsers || []} allUsers={allUsers || []} pendingMatches={pendingMatches || []} />
+      <AdminTabs
+        pendingUsers={pendingUsers || []}
+        allUsers={allUsers || []}
+        pendingMatches={pendingMatches || []}
+        activeSeason={activeSeason || null}
+        closedSeasons={closedSeasons || []}
+      />
     </div>
   )
 }

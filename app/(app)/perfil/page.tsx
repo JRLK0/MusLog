@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import { Header } from "@/components/header"
 import { ProfileForm } from "@/components/profile-form"
 
 export default async function PerfilPage() {
@@ -21,12 +20,8 @@ export default async function PerfilPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50/50">
-      <Header title="Mi Perfil" userName={profile.name} />
-
-      <main className="flex-1 p-4 pb-24">
-        <ProfileForm profile={profile} userEmail={user.email || ""} />
-      </main>
+    <div className="p-4">
+      <ProfileForm profile={profile} userEmail={user.email || ""} />
     </div>
   )
 }
