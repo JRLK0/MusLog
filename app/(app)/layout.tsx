@@ -68,13 +68,42 @@ export default async function AppLayout({
     .eq("is_active", true)
     .single()
 
+  // Obtener partidas pendientes donde el usuario es participante y no ha validado
+  let pendingMatchesCount = 0
+  if (user?.id) {
+    const { data: pendingMatches } = await supabase
+      .from("matches")
+      .select(`
+        id,
+        player1_id,
+        player2_id,
+        player3_id,
+        player4_id,
+        validations:match_validations(
+          player_id,
+          validated
+        )
+      `)
+      .eq("status", "pending")
+      .or(`player1_id.eq.${user.id},player2_id.eq.${user.id},player3_id.eq.${user.id},player4_id.eq.${user.id}`)
+
+    if (pendingMatches) {
+      // Filtrar partidas donde el usuario no ha validado
+      pendingMatchesCount = pendingMatches.filter((match) => {
+        const userValidation = match.validations?.find((v: any) => v.player_id === user.id)
+        return !userValidation || !userValidation.validated
+      }).length
+    }
+  }
+
   return (
     <div className="flex min-h-svh flex-col pb-16">
       <Header
-        title="Mus Tracker"
+        title="MusLog"
         userName={profile?.name}
         isAdmin={profile?.is_admin}
         pendingUsersCount={pendingUsersCount}
+        pendingMatchesCount={pendingMatchesCount}
         activeSeasonName={activeSeason?.name || null}
       />
       <main className="flex-1">{children}</main>

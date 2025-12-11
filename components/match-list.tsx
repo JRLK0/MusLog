@@ -1,26 +1,118 @@
 "use client"
 
-import { useState } from "react"
-import type { Match } from "@/lib/types"
+import { useState, useMemo } from "react"
+import type { Match, Season, Profile } from "@/lib/types"
 import { MatchCard } from "@/components/match-card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Search, X, Filter, ChevronDown, ChevronUp, Calendar } from "lucide-react"
+import { format } from "date-fns"
+import { es } from "date-fns/locale"
 
 interface MatchListProps {
   matches: Match[]
   currentUserId: string
   isAdmin: boolean
+  seasons: Season[]
+  players: Profile[]
 }
 
-export function MatchList({ matches, currentUserId, isAdmin }: MatchListProps) {
+export function MatchList({ matches, currentUserId, isAdmin, seasons, players }: MatchListProps) {
   const [filter, setFilter] = useState<"all" | "pending" | "validated">("all")
+  const [searchQuery, setSearchQuery] = useState("")
+  const [showFilters, setShowFilters] = useState(false)
+  const [selectedSeason, setSelectedSeason] = useState<string>("all")
+  const [selectedPlayer, setSelectedPlayer] = useState<string>("all")
+  const [dateFrom, setDateFrom] = useState("")
+  const [dateTo, setDateTo] = useState("")
 
-  const filteredMatches = matches.filter((match) => {
-    if (filter === "all") return true
-    return match.status === filter
-  })
+  // Función de búsqueda
+  const matchesSearch = (match: Match, query: string): boolean => {
+    if (!query.trim()) return true
+    
+    const lowerQuery = query.toLowerCase()
+    const searchableText = [
+      match.player1?.name || "",
+      match.player2?.name || "",
+      match.player3?.name || "",
+      match.player4?.name || "",
+      match.creator?.name || "",
+      format(new Date(match.played_at), "d MMM yyyy", { locale: es }),
+      format(new Date(match.played_at), "EEEE", { locale: es }),
+      match.team1_score.toString(),
+      match.team2_score.toString(),
+      `${match.team1_score} - ${match.team2_score}`,
+    ].join(" ").toLowerCase()
+
+    return searchableText.includes(lowerQuery)
+  }
+
+  // Función de filtrado combinado
+  const filteredMatches = useMemo(() => {
+    return matches.filter((match) => {
+      // Filtro de estado
+      if (filter !== "all" && match.status !== filter) return false
+
+      // Búsqueda de texto
+      if (!matchesSearch(match, searchQuery)) return false
+
+      // Filtro de temporada
+      if (selectedSeason !== "all") {
+        if (selectedSeason === "current") {
+          if (!match.season?.is_active) return false
+        } else {
+          if (match.season_id !== selectedSeason) return false
+        }
+      }
+
+      // Filtro de jugador
+      if (selectedPlayer !== "all") {
+        const playerIds = [match.player1_id, match.player2_id, match.player3_id, match.player4_id]
+        if (!playerIds.includes(selectedPlayer)) return false
+      }
+
+      // Filtro de rango de fechas
+      if (dateFrom || dateTo) {
+        const matchDate = new Date(match.played_at)
+        matchDate.setHours(0, 0, 0, 0)
+        
+        if (dateFrom) {
+          const fromDate = new Date(dateFrom)
+          fromDate.setHours(0, 0, 0, 0)
+          if (matchDate < fromDate) return false
+        }
+        
+        if (dateTo) {
+          const toDate = new Date(dateTo)
+          toDate.setHours(23, 59, 59, 999)
+          if (matchDate > toDate) return false
+        }
+      }
+
+      return true
+    })
+  }, [matches, filter, searchQuery, selectedSeason, selectedPlayer, dateFrom, dateTo])
 
   const pendingCount = matches.filter((m) => m.status === "pending").length
   const validatedCount = matches.filter((m) => m.status === "validated").length
+
+  // Contar filtros activos
+  const activeFiltersCount = [
+    selectedSeason !== "all",
+    selectedPlayer !== "all",
+    dateFrom !== "",
+    dateTo !== "",
+  ].filter(Boolean).length
+
+  const clearFilters = () => {
+    setSelectedSeason("all")
+    setSelectedPlayer("all")
+    setDateFrom("")
+    setDateTo("")
+    setSearchQuery("")
+  }
 
   // Agrupar partidas por fecha para separadores visuales
   const groupedMatches = filteredMatches.reduce((acc, match) => {
@@ -37,12 +129,142 @@ export function MatchList({ matches, currentUserId, isAdmin }: MatchListProps) {
   }, {} as Record<string, typeof filteredMatches>)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="space-y-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground mb-1">Partidas</h1>
           <p className="text-sm text-muted-foreground">Gestiona y visualiza todas las partidas registradas</p>
         </div>
+
+        {/* Campo de búsqueda */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Buscar por jugador, fecha, puntuación..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 pr-9"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Botón de filtros */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex-1 justify-between"
+          >
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4" />
+              <span>Filtros</span>
+              {activeFiltersCount > 0 && (
+                <span className="bg-primary text-primary-foreground text-xs rounded-full px-2 py-0.5">
+                  {activeFiltersCount}
+                </span>
+              )}
+            </div>
+            {showFilters ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </Button>
+          {activeFiltersCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearFilters}
+              className="text-xs"
+            >
+              Limpiar
+            </Button>
+          )}
+        </div>
+
+        {/* Panel de filtros avanzados */}
+        {showFilters && (
+          <div className="space-y-3 p-4 border rounded-lg bg-card">
+            {/* Filtro de temporada */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Temporada</label>
+              <Select value={selectedSeason} onValueChange={setSelectedSeason}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Todas las temporadas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas las temporadas</SelectItem>
+                  {seasons.filter(s => s.is_active).length > 0 && (
+                    <SelectItem value="current">
+                      Temporada actual ({seasons.find(s => s.is_active)?.name})
+                    </SelectItem>
+                  )}
+                  {seasons.filter(s => !s.is_active).map((season) => (
+                    <SelectItem key={season.id} value={season.id}>
+                      {season.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Filtro de jugador */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Jugador</label>
+              <Select value={selectedPlayer} onValueChange={setSelectedPlayer}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Todos los jugadores" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los jugadores</SelectItem>
+                  {players.map((player) => (
+                    <SelectItem key={player.id} value={player.id}>
+                      {player.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Filtro de rango de fechas */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Rango de fechas
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Desde</label>
+                  <Input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    className="text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Hasta</label>
+                  <Input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    className="text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tabs de estado */}
         <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="all" className="font-medium">
@@ -56,6 +278,13 @@ export function MatchList({ matches, currentUserId, isAdmin }: MatchListProps) {
             </TabsTrigger>
           </TabsList>
         </Tabs>
+
+        {/* Contador de resultados */}
+        {filteredMatches.length !== matches.length && (
+          <div className="text-sm text-muted-foreground text-center py-2">
+            Mostrando {filteredMatches.length} de {matches.length} partidas
+          </div>
+        )}
       </div>
 
       {filteredMatches.length === 0 ? (

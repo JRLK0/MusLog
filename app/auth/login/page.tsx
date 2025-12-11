@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import Image from "next/image"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -43,10 +44,16 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <Card className="border-0 shadow-lg">
           <CardHeader className="text-center pb-2">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100">
-              <span className="text-2xl font-bold text-emerald-700">M</span>
+            <div className="mx-auto mb-1 flex h-48 w-48 items-center justify-center">
+              <Image
+                src="/MusLog.png"
+                alt="MusLog Logo"
+                width={192}
+                height={192}
+                className="object-contain"
+                priority
+              />
             </div>
-            <CardTitle className="text-2xl font-bold">Mus Tracker</CardTitle>
             <CardDescription>Inicia sesión para continuar</CardDescription>
           </CardHeader>
           <CardContent>

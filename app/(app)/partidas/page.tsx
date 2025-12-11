@@ -31,9 +31,28 @@ export default async function PartidasPage() {
 
   const { data: profile } = await supabase.from("profiles").select("is_admin").eq("id", user?.id).single()
 
+  // Obtener temporadas para el filtro
+  const { data: seasons } = await supabase
+    .from("seasons")
+    .select("id, name, is_active")
+    .order("created_at", { ascending: false })
+
+  // Obtener jugadores aprobados para el filtro
+  const { data: players } = await supabase
+    .from("profiles")
+    .select("id, name")
+    .eq("status", "approved")
+    .order("name")
+
   return (
     <div className="p-4">
-      <MatchList matches={matches || []} currentUserId={user?.id || ""} isAdmin={profile?.is_admin || false} />
+      <MatchList 
+        matches={matches || []} 
+        currentUserId={user?.id || ""} 
+        isAdmin={profile?.is_admin || false}
+        seasons={seasons || []}
+        players={players || []}
+      />
     </div>
   )
 }

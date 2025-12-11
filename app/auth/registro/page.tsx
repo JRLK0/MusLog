@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import Image from "next/image"
 
 export default function RegistroPage() {
   const [name, setName] = useState("")
@@ -63,11 +64,18 @@ export default function RegistroPage() {
       <div className="w-full max-w-sm">
         <Card className="border-0 shadow-lg">
           <CardHeader className="text-center pb-2">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100">
-              <span className="text-2xl font-bold text-emerald-700">M</span>
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center">
+              <Image
+                src="/MusLog.png"
+                alt="MusLog Logo"
+                width={64}
+                height={64}
+                className="object-contain"
+                priority
+              />
             </div>
             <CardTitle className="text-2xl font-bold">Crear cuenta</CardTitle>
-            <CardDescription>Únete a Mus Tracker</CardDescription>
+            <CardDescription>Únete a MusLog</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSignUp} className="space-y-4">
