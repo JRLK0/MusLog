@@ -26,10 +26,10 @@ export default async function AppLayout({
   if (profile?.status === "pending") {
     return (
       <div className="flex min-h-svh flex-col items-center justify-center p-4 text-center">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
-          <span className="text-3xl">⏳</span>
+        <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-amber-100 to-amber-200 dark:from-amber-900/30 dark:to-amber-800/30 shadow-lg">
+          <span className="text-4xl">⏳</span>
         </div>
-        <h1 className="text-xl font-bold mb-2">Cuenta pendiente de aprobación</h1>
+        <h1 className="text-2xl font-bold mb-2 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">Cuenta pendiente de aprobación</h1>
         <p className="text-muted-foreground max-w-sm">
           Tu cuenta está siendo revisada por un administrador. Te notificaremos cuando esté aprobada.
         </p>
@@ -40,10 +40,10 @@ export default async function AppLayout({
   if (profile?.status === "rejected") {
     return (
       <div className="flex min-h-svh flex-col items-center justify-center p-4 text-center">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
-          <span className="text-3xl">❌</span>
+        <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-red-100 to-red-200 dark:from-red-900/30 dark:to-red-800/30 shadow-lg">
+          <span className="text-4xl">❌</span>
         </div>
-        <h1 className="text-xl font-bold mb-2">Cuenta rechazada</h1>
+        <h1 className="text-2xl font-bold mb-2 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">Cuenta rechazada</h1>
         <p className="text-muted-foreground max-w-sm">
           Tu solicitud de registro ha sido rechazada. Contacta con un administrador para más información.
         </p>

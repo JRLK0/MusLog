@@ -62,7 +62,7 @@ export default function RegistroPage() {
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-4">
       <div className="w-full max-w-sm">
-        <Card className="border-0 shadow-lg">
+        <Card className="border-0 shadow-xl backdrop-blur-sm bg-card/95">
           <CardHeader className="text-center pb-2">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center">
               <Image
@@ -74,7 +74,7 @@ export default function RegistroPage() {
                 priority
               />
             </div>
-            <CardTitle className="text-2xl font-bold">Crear cuenta</CardTitle>
+            <CardTitle className="text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">Crear cuenta</CardTitle>
             <CardDescription>Únete a MusLog</CardDescription>
           </CardHeader>
           <CardContent>
@@ -126,12 +126,12 @@ export default function RegistroPage() {
                 />
               </div>
               {error && <p className="text-sm text-red-500 bg-red-50 p-3 rounded-lg">{error}</p>}
-              <Button type="submit" className="w-full h-12 bg-emerald-600 hover:bg-emerald-700" disabled={isLoading}>
+              <Button type="submit" className="w-full h-12 bg-primary hover:bg-primary/90 shadow-md hover:shadow-lg transition-all duration-200" disabled={isLoading}>
                 {isLoading ? "Registrando..." : "Registrarse"}
               </Button>
               <p className="text-center text-sm text-muted-foreground">
                 ¿Ya tienes cuenta?{" "}
-                <Link href="/auth/login" className="text-emerald-600 hover:underline font-medium">
+                <Link href="/auth/login" className="text-primary hover:underline font-medium transition-colors">
                   Inicia sesión
                 </Link>
               </p>

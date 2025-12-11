@@ -118,12 +118,12 @@ export default function NuevaPartidaPage() {
   if (hasActiveSeason === false) {
     return (
       <div className="p-4">
-        <Card className="border-0 shadow-sm border-amber-200 border-2">
+        <Card className="border-0 shadow-lg border-amber-300/50 border-2 bg-gradient-to-br from-amber-50/50 to-amber-100/30 dark:from-amber-900/10 dark:to-amber-800/10">
           <CardContent className="p-6">
             <div className="flex items-start gap-4">
               <div className="flex-shrink-0">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100">
-                  <AlertCircle className="h-6 w-6 text-amber-600" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-amber-100 to-amber-200 dark:from-amber-900/30 dark:to-amber-800/30 shadow-md">
+                  <AlertCircle className="h-6 w-6 text-amber-600 dark:text-amber-400" />
                 </div>
               </div>
               <div className="flex-1">
@@ -145,16 +145,16 @@ export default function NuevaPartidaPage() {
 
   return (
     <div className="p-4 space-y-4">
-      <Card className="border-0 shadow-sm">
+      <Card className="border-0 shadow-lg">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
-            <Trophy className="h-5 w-5 text-emerald-600" />
+            <Trophy className="h-5 w-5 text-primary" />
             Nueva Partida
           </CardTitle>
           <CardDescription>
             Registra una nueva partida de Mus
             {activeSeasonName && (
-              <span className="block mt-1 text-xs text-emerald-600 font-medium">
+              <span className="block mt-1 text-xs text-primary font-medium">
                 Temporada activa: {activeSeasonName}
               </span>
             )}
@@ -177,7 +177,7 @@ export default function NuevaPartidaPage() {
             {/* Equipo 1 */}
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-emerald-500" />
+                <div className="h-3 w-3 rounded-full bg-primary shadow-sm" />
                 <Label className="text-base font-semibold">Equipo 1</Label>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -299,7 +299,7 @@ export default function NuevaPartidaPage() {
                 <Button
                   type="button"
                   variant={winnerTeam === "1" ? "default" : "outline"}
-                  className={`h-14 ${winnerTeam === "1" ? "bg-emerald-600 hover:bg-emerald-700" : ""}`}
+                  className={`h-14 transition-all duration-200 ${winnerTeam === "1" ? "bg-primary hover:bg-primary/90 shadow-md hover:shadow-lg" : ""}`}
                   onClick={() => setWinnerTeam("1")}
                 >
                   <Users className="mr-2 h-4 w-4" />
@@ -308,7 +308,7 @@ export default function NuevaPartidaPage() {
                 <Button
                   type="button"
                   variant={winnerTeam === "2" ? "default" : "outline"}
-                  className={`h-14 ${winnerTeam === "2" ? "bg-blue-600 hover:bg-blue-700" : ""}`}
+                  className={`h-14 transition-all duration-200 ${winnerTeam === "2" ? "bg-blue-600 hover:bg-blue-600/90 shadow-md hover:shadow-lg" : ""}`}
                   onClick={() => setWinnerTeam("2")}
                 >
                   <Users className="mr-2 h-4 w-4" />
@@ -321,7 +321,7 @@ export default function NuevaPartidaPage() {
 
             <Button
               type="submit"
-              className="w-full h-12 bg-emerald-600 hover:bg-emerald-700"
+              className="w-full h-12 bg-primary hover:bg-primary/90 shadow-md hover:shadow-lg transition-all duration-200"
               disabled={isLoading || hasDuplicates}
             >
               {isLoading ? "Registrando..." : "Registrar partida"}

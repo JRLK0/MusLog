@@ -68,7 +68,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-4">
       <div className="w-full max-w-sm">
-        <Card className="border-0 shadow-lg">
+        <Card className="border-0 shadow-xl backdrop-blur-sm bg-card/95">
           <CardHeader className="text-center pb-2">
             <div className="mx-auto mb-4 flex h-44 w-44 items-center justify-center">
               <Image
@@ -120,12 +120,12 @@ export default function LoginPage() {
                 </Label>
               </div>
               {error && <p className="text-sm text-red-500 bg-red-50 p-3 rounded-lg">{error}</p>}
-              <Button type="submit" className="w-full h-12 bg-emerald-600 hover:bg-emerald-700" disabled={isLoading}>
+              <Button type="submit" className="w-full h-12 bg-primary hover:bg-primary/90 shadow-md hover:shadow-lg transition-all duration-200" disabled={isLoading}>
                 {isLoading ? "Entrando..." : "Entrar"}
               </Button>
               <p className="text-center text-sm text-muted-foreground">
                 ¿No tienes cuenta?{" "}
-                <Link href="/auth/registro" className="text-emerald-600 hover:underline font-medium">
+                <Link href="/auth/registro" className="text-primary hover:underline font-medium transition-colors">
                   Regístrate
                 </Link>
               </p>

@@ -42,7 +42,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body className="font-sans antialiased bg-gray-50">
+      <body className="font-sans antialiased bg-background">
         {children}
         <Analytics />
       </body>

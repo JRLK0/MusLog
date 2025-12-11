@@ -132,7 +132,7 @@ export function MatchList({ matches, currentUserId, isAdmin, seasons, players }:
     <div className="space-y-4">
       <div className="space-y-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground mb-1">Partidas</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-2 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">Partidas</h1>
           <p className="text-sm text-muted-foreground">Gestiona y visualiza todas las partidas registradas</p>
         </div>
 
@@ -144,7 +144,7 @@ export function MatchList({ matches, currentUserId, isAdmin, seasons, players }:
             placeholder="Buscar por jugador, fecha, puntuación..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 pr-9"
+            className="pl-9 pr-9 h-11 shadow-sm focus:shadow-md transition-shadow"
           />
           {searchQuery && (
             <button
@@ -192,7 +192,7 @@ export function MatchList({ matches, currentUserId, isAdmin, seasons, players }:
 
         {/* Panel de filtros avanzados */}
         {showFilters && (
-          <div className="space-y-3 p-4 border rounded-lg bg-card">
+          <div className="space-y-3 p-4 border rounded-lg bg-card shadow-md animate-in slide-in-from-top-2 duration-200">
             {/* Filtro de temporada */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Temporada</label>
@@ -289,13 +289,19 @@ export function MatchList({ matches, currentUserId, isAdmin, seasons, players }:
 
       {filteredMatches.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground">
-          <p className="text-base">No hay partidas {filter !== "all" ? (filter === "pending" ? "pendientes" : "validadas") : ""}</p>
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+            <Search className="h-8 w-8 text-muted-foreground/50" />
+          </div>
+          <p className="text-base font-medium">No hay partidas {filter !== "all" ? (filter === "pending" ? "pendientes" : "validadas") : ""}</p>
+          {(searchQuery || activeFiltersCount > 0) && (
+            <p className="text-sm mt-2">Intenta ajustar los filtros de búsqueda</p>
+          )}
         </div>
       ) : (
         <div className="space-y-6">
           {Object.entries(groupedMatches).map(([date, dateMatches]) => (
             <div key={date} className="space-y-3">
-              <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm py-3 mb-2 border-b-2 border-gray-300 dark:border-gray-600">
+              <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-md py-3 mb-2 border-b-2 border-primary/20 dark:border-primary/30 shadow-sm">
                 <h2 className="text-base font-bold text-foreground uppercase tracking-wide flex items-center gap-2">
                   <span className="text-muted-foreground font-normal normal-case text-sm">
                     {new Date(dateMatches[0].played_at).toLocaleDateString('es-ES', { weekday: 'long' })}
@@ -307,7 +313,7 @@ export function MatchList({ matches, currentUserId, isAdmin, seasons, players }:
                   </span>
                 </h2>
               </div>
-              <div className="space-y-2 pl-2 border-l-2 border-gray-200 dark:border-gray-700">
+              <div className="space-y-2 pl-2 border-l-2 border-primary/20 dark:border-primary/30">
                 {dateMatches.map((match) => (
                   <MatchCard key={match.id} match={match} currentUserId={currentUserId} isAdmin={isAdmin} />
                 ))}

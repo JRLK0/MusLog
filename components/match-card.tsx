@@ -164,10 +164,10 @@ export function MatchCard({ match, currentUserId, isAdmin }: MatchCardProps) {
   const StatusIcon = status.icon
 
   return (
-    <Card className="border shadow-md overflow-hidden hover:shadow-lg transition-all cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
+    <Card className="border shadow-md overflow-hidden hover:shadow-xl hover:scale-[1.01] transition-all duration-300 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
       <CardContent className="p-0">
         {/* Header clickeable con resumen */}
-        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 border-b hover:from-gray-100 hover:to-gray-200 dark:hover:from-gray-700 dark:hover:to-gray-800 transition-colors">
+        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-slate-50 to-slate-100/50 dark:from-slate-800/50 dark:to-slate-900/50 border-b hover:from-slate-100 hover:to-slate-200/50 dark:hover:from-slate-700/50 dark:hover:to-slate-800/50 transition-all duration-200">
           <div className="flex items-center gap-3 flex-1 min-w-0" onClick={() => setIsExpanded(!isExpanded)}>
             <ChevronRight 
               className={`h-5 w-5 text-muted-foreground transition-transform flex-shrink-0 ${isExpanded ? 'rotate-90' : ''}`}
@@ -211,7 +211,7 @@ export function MatchCard({ match, currentUserId, isAdmin }: MatchCardProps) {
                       <Button
                         disabled={isValidating}
                         size="sm"
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-sm"
+                        className="bg-primary hover:bg-primary/90 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {isValidating ? "..." : "Validar"}
@@ -247,7 +247,7 @@ export function MatchCard({ match, currentUserId, isAdmin }: MatchCardProps) {
                     }}
                     disabled={isValidating}
                     size="sm"
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-sm"
+                    className="bg-primary hover:bg-primary/90 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200"
                   >
                     {isValidating ? "..." : "Validar"}
                   </Button>
@@ -259,7 +259,7 @@ export function MatchCard({ match, currentUserId, isAdmin }: MatchCardProps) {
                     }}
                     disabled={isValidating}
                     size="sm"
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-sm"
+                    className="bg-primary hover:bg-primary/90 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200"
                   >
                     {isValidating ? "..." : "Validar"}
                   </Button>
@@ -280,10 +280,10 @@ export function MatchCard({ match, currentUserId, isAdmin }: MatchCardProps) {
             <div className="p-5 space-y-4 bg-background">
               {/* Team 1 */}
               <div
-                className={`flex items-center justify-between p-4 rounded-xl transition-all ${
+                className={`flex items-center justify-between p-4 rounded-xl transition-all duration-300 ${
                   isTeam1Winner 
-                    ? "bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-900/30 dark:to-emerald-800/30 border-2 border-emerald-400 shadow-sm" 
-                    : "bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 border-2 border-red-400 shadow-sm"
+                    ? "bg-gradient-to-r from-emerald-50/80 to-emerald-100/60 dark:from-emerald-900/20 dark:to-emerald-800/20 border-2 border-emerald-300/50 dark:border-emerald-500/30 shadow-md hover:shadow-lg" 
+                    : "bg-gradient-to-r from-red-50/80 to-red-100/60 dark:from-red-900/20 dark:to-red-800/20 border-2 border-red-300/50 dark:border-red-500/30 shadow-md hover:shadow-lg"
                 }`}
               >
                 <div className="flex items-center gap-3 flex-1">
@@ -309,10 +309,10 @@ export function MatchCard({ match, currentUserId, isAdmin }: MatchCardProps) {
 
               {/* Team 2 */}
               <div
-                className={`flex items-center justify-between p-4 rounded-xl transition-all ${
+                className={`flex items-center justify-between p-4 rounded-xl transition-all duration-300 ${
                   !isTeam1Winner 
-                    ? "bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-900/30 dark:to-emerald-800/30 border-2 border-emerald-400 shadow-sm" 
-                    : "bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 border-2 border-red-400 shadow-sm"
+                    ? "bg-gradient-to-r from-emerald-50/80 to-emerald-100/60 dark:from-emerald-900/20 dark:to-emerald-800/20 border-2 border-emerald-300/50 dark:border-emerald-500/30 shadow-md hover:shadow-lg" 
+                    : "bg-gradient-to-r from-red-50/80 to-red-100/60 dark:from-red-900/20 dark:to-red-800/20 border-2 border-red-300/50 dark:border-red-500/30 shadow-md hover:shadow-lg"
                 }`}
               >
                 <div className="flex items-center gap-3 flex-1">
@@ -473,7 +473,7 @@ export function MatchCard({ match, currentUserId, isAdmin }: MatchCardProps) {
                   }
                 }}
                 disabled={isValidating}
-                className="bg-emerald-600 hover:bg-emerald-700"
+                className="bg-primary hover:bg-primary/90 shadow-md hover:shadow-lg transition-all duration-200"
               >
                 {isValidating ? "Validando..." : "Confirmar"}
               </AlertDialogAction>

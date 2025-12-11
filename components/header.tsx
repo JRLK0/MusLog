@@ -40,7 +40,7 @@ export function Header({
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/70 shadow-sm">
       <div className="grid grid-cols-3 h-14 items-center px-4">
         <div className="flex items-center gap-3">
           <Image

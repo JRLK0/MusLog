@@ -20,7 +20,7 @@ export function BottomNav({ isAdmin = false }: BottomNavProps) {
   ]
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/70 shadow-lg">
       <div className="flex h-16 items-center justify-around px-4">
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
@@ -29,8 +29,10 @@ export function BottomNav({ isAdmin = false }: BottomNavProps) {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 px-3 py-2 text-xs transition-colors",
-                isActive ? "text-emerald-600" : "text-muted-foreground hover:text-foreground",
+                "flex flex-col items-center justify-center gap-1 px-3 py-2 text-xs transition-all duration-200 rounded-lg",
+                isActive 
+                  ? "text-primary font-semibold bg-accent/50" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent/30",
               )}
             >
               <item.icon className={cn("h-5 w-5", isActive && "fill-emerald-100")} />
