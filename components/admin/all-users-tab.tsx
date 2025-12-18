@@ -16,6 +16,7 @@ interface AllUsersTabProps {
 export function AllUsersTab({ users }: AllUsersTabProps) {
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [currentUserIsAdmin, setCurrentUserIsAdmin] = useState<boolean>(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -24,6 +25,15 @@ export function AllUsersTab({ users }: AllUsersTabProps) {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         setCurrentUserId(user.id)
+        // Obtener el perfil del usuario actual para verificar si es admin
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("is_admin")
+          .eq("id", user.id)
+          .single()
+        if (profile) {
+          setCurrentUserIsAdmin(profile.is_admin || false)
+        }
       }
     }
     getCurrentUser()
@@ -59,6 +69,12 @@ export function AllUsersTab({ users }: AllUsersTabProps) {
   }
 
   const toggleActivePlayer = async (userId: string, isActive: boolean) => {
+    // Prevenir que un admin se suspenda a sí mismo
+    if (userId === currentUserId && currentUserIsAdmin && isActive) {
+      alert("No puedes suspenderse a ti mismo como administrador")
+      return
+    }
+
     setProcessingId(`${userId}-player`)
     try {
       const supabase = createClient()
@@ -76,8 +92,9 @@ export function AllUsersTab({ users }: AllUsersTabProps) {
   }
 
   const toggleLogin = async (userId: string, canLogin: boolean) => {
-    if (userId === currentUserId && canLogin) {
-      alert("No puedes bloquear tu propio acceso.")
+    // Prevenir que un admin bloquee su propio login
+    if (userId === currentUserId && currentUserIsAdmin) {
+      alert("No puedes bloquear tu propio acceso como administrador")
       return
     }
 
@@ -164,11 +181,17 @@ export function AllUsersTab({ users }: AllUsersTabProps) {
 
                   <Button
                     onClick={() => toggleActivePlayer(user.id, user.is_active_player ?? true)}
-                    disabled={processingId === `${user.id}-player`}
+                    disabled={processingId === `${user.id}-player` || (user.is_admin && user.id === currentUserId)}
                     variant="outline"
                     size="sm"
                     className={user.is_active_player === false ? "text-amber-700" : "text-emerald-700"}
-                    title={user.is_active_player === false ? "Activar jugador" : "Suspender jugador"}
+                    title={
+                      user.is_admin && user.id === currentUserId
+                        ? "No puedes suspenderse a ti mismo como administrador"
+                        : user.is_active_player === false
+                        ? "Activar jugador"
+                        : "Suspender jugador"
+                    }
                   >
                     {user.is_active_player === false ? (
                       <>
@@ -185,11 +208,17 @@ export function AllUsersTab({ users }: AllUsersTabProps) {
 
                   <Button
                     onClick={() => toggleLogin(user.id, user.can_login ?? true)}
-                    disabled={processingId === `${user.id}-login`}
+                    disabled={processingId === `${user.id}-login` || (user.is_admin && user.id === currentUserId)}
                     variant="outline"
                     size="sm"
                     className={user.can_login === false ? "text-emerald-700" : "text-red-700"}
-                    title={user.can_login === false ? "Habilitar login" : "Bloquear login"}
+                    title={
+                      user.is_admin && user.id === currentUserId
+                        ? "No puedes bloquear tu propio acceso como administrador"
+                        : user.can_login === false
+                        ? "Habilitar login"
+                        : "Bloquear login"
+                    }
                   >
                     {user.can_login === false ? (
                       <>
