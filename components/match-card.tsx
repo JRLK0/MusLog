@@ -43,20 +43,20 @@ export function MatchCard({ match, currentUserId, isAdmin }: MatchCardProps) {
 
   const isParticipant = [match.player1_id, match.player2_id, match.player3_id, match.player4_id].includes(currentUserId)
 
-  const team1Players = [match.player1, match.player2]
-  const team2Players = [match.player3, match.player4]
+  const team1Players = [match.player1 || match.temp_player1, match.player2 || match.temp_player2]
+  const team2Players = [match.player3 || match.temp_player3, match.player4 || match.temp_player4]
   const isTeam1Winner = match.winner_team === 1
 
   // Obtener información de validaciones
   const validations = match.validations || []
-  const allPlayers = [match.player1, match.player2, match.player3, match.player4]
+  const profilePlayers = [match.player1, match.player2, match.player3, match.player4]
   
   const validatedPlayers = validations
     .filter((v) => v.validated)
-    .map((v) => v.player?.name || allPlayers.find((p) => p?.id === v.player_id)?.name)
+    .map((v) => v.player?.name || profilePlayers.find((p) => p?.id === v.player_id)?.name)
     .filter(Boolean)
   
-  const pendingPlayers = allPlayers
+  const pendingPlayers = profilePlayers
     .filter((p) => {
       if (!p) return false
       const validation = validations.find((v) => v.player_id === p.id)
@@ -69,10 +69,11 @@ export function MatchCard({ match, currentUserId, isAdmin }: MatchCardProps) {
   const hasCurrentUserValidated = currentUserValidation?.validated || false
 
   // Determinar quién validó la partida si está validada
-  const allPlayersValidated = validatedPlayers.length === 4
+  const requiredValidations = validations.length
+  const allPlayersValidated = requiredValidations > 0 && validatedPlayers.length === requiredValidations
   const validatedByInfo = match.status === "validated" 
     ? (allPlayersValidated 
-        ? `Validada por todos los jugadores: ${validatedPlayers.join(", ")}`
+        ? `Validada por todos los jugadores requeridos: ${validatedPlayers.join(", ")}`
         : validatedPlayers.length > 0
           ? `Validada por admin (jugadores que validaron: ${validatedPlayers.join(", ")})`
           : "Validada por admin")

@@ -46,20 +46,20 @@ export function PendingMatchesTab({ matches }: PendingMatchesTabProps) {
   return (
     <div className="space-y-3">
       {matches.map((match) => {
-        const team1Players = [match.player1, match.player2]
-        const team2Players = [match.player3, match.player4]
+        const team1Players = [match.player1 || match.temp_player1, match.player2 || match.temp_player2]
+        const team2Players = [match.player3 || match.temp_player3, match.player4 || match.temp_player4]
         const isTeam1Winner = match.winner_team === 1
 
         // Obtener información de validaciones
         const validations = match.validations || []
-        const allPlayers = [match.player1, match.player2, match.player3, match.player4]
+        const profilePlayers = [match.player1, match.player2, match.player3, match.player4]
         
         const validatedPlayers = validations
           .filter((v) => v.validated)
-          .map((v) => v.player?.name || allPlayers.find((p) => p?.id === v.player_id)?.name)
+          .map((v) => v.player?.name || profilePlayers.find((p) => p?.id === v.player_id)?.name)
           .filter(Boolean)
         
-        const pendingPlayers = allPlayers
+        const pendingPlayers = profilePlayers
           .filter((p) => {
             if (!p) return false
             const validation = validations.find((v) => v.player_id === p.id)

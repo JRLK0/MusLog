@@ -5,16 +5,17 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Trophy, TrendingUp, TrendingDown, Minus, Crown, Medal, Award, Calendar } from "lucide-react"
-import type { Profile, Match, Season } from "@/lib/types"
+import type { Profile, Match, Season, SeasonPlayer } from "@/lib/types"
 import { calculateAllPlayerStats } from "@/lib/season-stats"
 
 interface PlayerStatsClientProps {
   profiles: Array<{ id: string; name: string }>
+  seasonPlayers: Array<Pick<SeasonPlayer, "id" | "name" | "season_id" | "is_active">>
   matches: Match[]
   seasons: Season[]
 }
 
-export function PlayerStatsClient({ profiles, matches, seasons }: PlayerStatsClientProps) {
+export function PlayerStatsClient({ profiles, seasonPlayers, matches, seasons }: PlayerStatsClientProps) {
   const [selectedSeason, setSelectedSeason] = useState<string>("all")
 
   // Filtrar partidas según temporada seleccionada
@@ -31,9 +32,24 @@ export function PlayerStatsClient({ profiles, matches, seasons }: PlayerStatsCli
   }, [matches, seasons, selectedSeason])
 
   // Calcular estadísticas
+  const playersForStats = useMemo(() => {
+    if (selectedSeason === "all") {
+      return profiles
+    }
+
+    const activeSeason = seasons.find((s) => s.is_active)
+    const targetSeasonId =
+      selectedSeason === "current" ? activeSeason?.id : selectedSeason
+
+    if (!targetSeasonId) return profiles
+
+    const temps = seasonPlayers.filter((p) => p.season_id === targetSeasonId)
+    return [...profiles, ...temps.map((p) => ({ id: p.id, name: p.name }))]
+  }, [profiles, seasonPlayers, seasons, selectedSeason])
+
   const playerStats = useMemo(() => {
-    return calculateAllPlayerStats(filteredMatches, profiles)
-  }, [filteredMatches, profiles])
+    return calculateAllPlayerStats(filteredMatches, playersForStats)
+  }, [filteredMatches, playersForStats])
 
   // Ordenar estadísticas
   const sortedStats = useMemo(() => {

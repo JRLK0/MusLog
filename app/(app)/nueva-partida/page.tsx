@@ -10,11 +10,11 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useRouter } from "next/navigation"
-import type { Profile } from "@/lib/types"
-import { Trophy, Users, AlertCircle } from "lucide-react"
+import type { Profile, SeasonPlayer } from "@/lib/types"
+import { Trophy, Users, AlertCircle, X } from "lucide-react"
 
 export default function NuevaPartidaPage() {
-  const [players, setPlayers] = useState<Profile[]>([])
+  const [players, setPlayers] = useState<Array<Profile | (SeasonPlayer & { type: "temp" })>>([])
   const [player1, setPlayer1] = useState("")
   const [player2, setPlayer2] = useState("")
   const [player3, setPlayer3] = useState("")
@@ -31,10 +31,27 @@ export default function NuevaPartidaPage() {
   useEffect(() => {
     async function fetchPlayers() {
       const supabase = createClient()
-      const { data } = await supabase.from("profiles").select("*").eq("status", "approved").order("name")
+      const { data: approved } = await supabase.from("profiles").select("*").eq("status", "approved").order("name")
 
-      if (data) {
-        setPlayers(data)
+      // Buscar temporada activa y jugadores temporales activos de esa temporada
+      const { data: activeSeason } = await supabase.from("seasons").select("id, name").eq("is_active", true).maybeSingle()
+      let tempPlayers: SeasonPlayer[] = []
+      if (activeSeason) {
+        const { data: temps } = await supabase
+          .from("season_players")
+          .select("*")
+          .eq("is_active", true)
+          .eq("season_id", activeSeason.id)
+          .order("name")
+        tempPlayers = temps || []
+      }
+
+      if (approved) {
+        const normalized = [
+          ...approved,
+          ...tempPlayers.map((t) => ({ ...t, type: "temp" as const })),
+        ]
+        setPlayers(normalized)
       }
     }
     fetchPlayers()
@@ -45,7 +62,7 @@ export default function NuevaPartidaPage() {
   useEffect(() => {
     async function fetchActiveSeason() {
       const supabase = createClient()
-      const { data } = await supabase.from("seasons").select("name").eq("is_active", true).single()
+      const { data } = await supabase.from("seasons").select("name").eq("is_active", true).maybeSingle()
 
       if (data) {
         setActiveSeasonName(data.name)
@@ -56,6 +73,19 @@ export default function NuevaPartidaPage() {
     }
     fetchActiveSeason()
   }, [])
+
+  // Actualizar automáticamente el equipo ganador basado en la puntuación
+  useEffect(() => {
+    const score1 = Number.parseInt(team1Score) || 0
+    const score2 = Number.parseInt(team2Score) || 0
+
+    if (score1 > score2) {
+      setWinnerTeam("1")
+    } else if (score2 > score1) {
+      setWinnerTeam("2")
+    }
+    // Si hay empate, mantener el valor actual
+  }, [team1Score, team2Score])
 
   const selectedPlayers = [player1, player2, player3, player4].filter(Boolean)
   const hasDuplicates = new Set(selectedPlayers).size !== selectedPlayers.length
@@ -87,13 +117,29 @@ export default function NuevaPartidaPage() {
         throw new Error("No estás autenticado")
       }
 
+      const parseSelection = (value: string) => {
+        if (value.startsWith("temp:")) {
+          return { type: "temp" as const, id: value.replace("temp:", "") }
+        }
+        return { type: "profile" as const, id: value }
+      }
+
+      const p1 = parseSelection(player1)
+      const p2 = parseSelection(player2)
+      const p3 = parseSelection(player3)
+      const p4 = parseSelection(player4)
+
       const { error: insertError } = await supabase.from("matches").insert({
         created_by: user.id,
         played_at: new Date(playedAt).toISOString(),
-        player1_id: player1,
-        player2_id: player2,
-        player3_id: player3,
-        player4_id: player4,
+        player1_id: p1.type === "profile" ? p1.id : null,
+        player2_id: p2.type === "profile" ? p2.id : null,
+        player3_id: p3.type === "profile" ? p3.id : null,
+        player4_id: p4.type === "profile" ? p4.id : null,
+        temp_player1_id: p1.type === "temp" ? p1.id : null,
+        temp_player2_id: p2.type === "temp" ? p2.id : null,
+        temp_player3_id: p3.type === "temp" ? p3.id : null,
+        temp_player4_id: p4.type === "temp" ? p4.id : null,
         winner_team: Number.parseInt(winnerTeam),
         team1_score: Number.parseInt(team1Score),
         team2_score: Number.parseInt(team2Score),
@@ -110,8 +156,15 @@ export default function NuevaPartidaPage() {
     }
   }
 
+  const getValueForPlayer = (p: Profile | (SeasonPlayer & { type: "temp" })) => {
+    return "type" in p && p.type === "temp" ? `temp:${p.id}` : p.id
+  }
+
   const getAvailablePlayers = (currentSelection: string) => {
-    return players.filter((p) => p.id === currentSelection || !selectedPlayers.includes(p.id))
+    return players.filter((p) => {
+      const value = getValueForPlayer(p)
+      return value === currentSelection || !selectedPlayers.includes(value)
+    })
   }
 
   // Si no hay temporada activa, mostrar aviso
@@ -180,40 +233,76 @@ export default function NuevaPartidaPage() {
                 <div className="h-3 w-3 rounded-full bg-primary shadow-sm" />
                 <Label className="text-base font-semibold">Equipo 1</Label>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="player1" className="text-xs text-muted-foreground">
                     Jugador 1
                   </Label>
-                  <Select value={player1} onValueChange={setPlayer1}>
-                    <SelectTrigger className="h-12">
-                      <SelectValue placeholder="Seleccionar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getAvailablePlayers(player1).map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <Select value={player1} onValueChange={setPlayer1}>
+                      <SelectTrigger className="h-12 flex-1">
+                        <SelectValue placeholder="Seleccionar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getAvailablePlayers(player1).map((p) => {
+                          const value = getValueForPlayer(p)
+                          const isTemp = "type" in p && p.type === "temp"
+                          return (
+                            <SelectItem key={value} value={value}>
+                              {p.name}
+                              {isTemp ? " (Temporal)" : ""}
+                            </SelectItem>
+                          )
+                        })}
+                      </SelectContent>
+                    </Select>
+                    {player1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-12 w-10 sm:w-12 flex-shrink-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                        onClick={() => setPlayer1("")}
+                      >
+                        <X className="h-4 w-4 sm:h-5 sm:w-5" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="player2" className="text-xs text-muted-foreground">
                     Jugador 2
                   </Label>
-                  <Select value={player2} onValueChange={setPlayer2}>
-                    <SelectTrigger className="h-12">
-                      <SelectValue placeholder="Seleccionar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getAvailablePlayers(player2).map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <Select value={player2} onValueChange={setPlayer2}>
+                      <SelectTrigger className="h-12 flex-1">
+                        <SelectValue placeholder="Seleccionar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getAvailablePlayers(player2).map((p) => {
+                          const value = getValueForPlayer(p)
+                          const isTemp = "type" in p && p.type === "temp"
+                          return (
+                            <SelectItem key={value} value={value}>
+                              {p.name}
+                              {isTemp ? " (Temporal)" : ""}
+                            </SelectItem>
+                          )
+                        })}
+                      </SelectContent>
+                    </Select>
+                    {player2 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-12 w-10 sm:w-12 flex-shrink-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                        onClick={() => setPlayer2("")}
+                      >
+                        <X className="h-4 w-4 sm:h-5 sm:w-5" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -224,40 +313,76 @@ export default function NuevaPartidaPage() {
                 <div className="h-3 w-3 rounded-full bg-blue-500" />
                 <Label className="text-base font-semibold">Equipo 2</Label>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="player3" className="text-xs text-muted-foreground">
                     Jugador 3
                   </Label>
-                  <Select value={player3} onValueChange={setPlayer3}>
-                    <SelectTrigger className="h-12">
-                      <SelectValue placeholder="Seleccionar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getAvailablePlayers(player3).map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <Select value={player3} onValueChange={setPlayer3}>
+                      <SelectTrigger className="h-12 flex-1">
+                        <SelectValue placeholder="Seleccionar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getAvailablePlayers(player3).map((p) => {
+                          const value = getValueForPlayer(p)
+                          const isTemp = "type" in p && p.type === "temp"
+                          return (
+                            <SelectItem key={value} value={value}>
+                              {p.name}
+                              {isTemp ? " (Temporal)" : ""}
+                            </SelectItem>
+                          )
+                        })}
+                      </SelectContent>
+                    </Select>
+                    {player3 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-12 w-10 sm:w-12 flex-shrink-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                        onClick={() => setPlayer3("")}
+                      >
+                        <X className="h-4 w-4 sm:h-5 sm:w-5" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="player4" className="text-xs text-muted-foreground">
                     Jugador 4
                   </Label>
-                  <Select value={player4} onValueChange={setPlayer4}>
-                    <SelectTrigger className="h-12">
-                      <SelectValue placeholder="Seleccionar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getAvailablePlayers(player4).map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <Select value={player4} onValueChange={setPlayer4}>
+                      <SelectTrigger className="h-12 flex-1">
+                        <SelectValue placeholder="Seleccionar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getAvailablePlayers(player4).map((p) => {
+                          const value = getValueForPlayer(p)
+                          const isTemp = "type" in p && p.type === "temp"
+                          return (
+                            <SelectItem key={value} value={value}>
+                              {p.name}
+                              {isTemp ? " (Temporal)" : ""}
+                            </SelectItem>
+                          )
+                        })}
+                      </SelectContent>
+                    </Select>
+                    {player4 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-12 w-10 sm:w-12 flex-shrink-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                        onClick={() => setPlayer4("")}
+                      >
+                        <X className="h-4 w-4 sm:h-5 sm:w-5" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -295,7 +420,7 @@ export default function NuevaPartidaPage() {
             {/* Ganador */}
             <div className="space-y-3">
               <Label className="text-base font-semibold">Equipo ganador</Label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Button
                   type="button"
                   variant={winnerTeam === "1" ? "default" : "outline"}
