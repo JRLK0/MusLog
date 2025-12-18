@@ -5,6 +5,16 @@ import type { Profile } from "@/lib/types"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import { Shield, ShieldOff, CheckCircle, Clock, XCircle, UserX, UserCheck, Lock, Unlock } from "lucide-react"
@@ -17,6 +27,14 @@ export function AllUsersTab({ users }: AllUsersTabProps) {
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [currentUserIsAdmin, setCurrentUserIsAdmin] = useState<boolean>(false)
+  const [suspendDialogOpen, setSuspendDialogOpen] = useState(false)
+  const [blockLoginDialogOpen, setBlockLoginDialogOpen] = useState(false)
+  const [pendingAction, setPendingAction] = useState<{
+    type: "suspend" | "activate" | "block" | "unblock"
+    userId: string
+    userName: string
+    currentState: boolean
+  } | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -68,55 +86,90 @@ export function AllUsersTab({ users }: AllUsersTabProps) {
     rejected: { label: "Rechazado", icon: XCircle, color: "bg-red-100 text-red-800" },
   }
 
-  const toggleActivePlayer = async (userId: string, isActive: boolean) => {
+  const handleSuspendClick = (userId: string, userName: string, isActive: boolean) => {
     // Prevenir que un admin se suspenda a sí mismo
     if (userId === currentUserId && currentUserIsAdmin && isActive) {
       alert("No puedes suspenderse a ti mismo como administrador")
       return
     }
 
-    setProcessingId(`${userId}-player`)
+    setPendingAction({
+      type: isActive ? "suspend" : "activate",
+      userId,
+      userName,
+      currentState: isActive,
+    })
+    setSuspendDialogOpen(true)
+  }
+
+  const confirmSuspendAction = async () => {
+    if (!pendingAction) return
+
+    setSuspendDialogOpen(false)
+    setProcessingId(`${pendingAction.userId}-player`)
     try {
       const supabase = createClient()
       await supabase
         .from("profiles")
-        .update({ is_active_player: !isActive, updated_at: new Date().toISOString() })
-        .eq("id", userId)
+        .update({
+          is_active_player: !pendingAction.currentState,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", pendingAction.userId)
 
       router.refresh()
     } catch (error) {
       console.error("Error toggling active player:", error)
     } finally {
       setProcessingId(null)
+      setPendingAction(null)
     }
   }
 
-  const toggleLogin = async (userId: string, canLogin: boolean) => {
+  const handleBlockLoginClick = (userId: string, userName: string, canLogin: boolean) => {
     // Prevenir que un admin bloquee su propio login
     if (userId === currentUserId && currentUserIsAdmin) {
       alert("No puedes bloquear tu propio acceso como administrador")
       return
     }
 
-    setProcessingId(`${userId}-login`)
+    setPendingAction({
+      type: canLogin ? "block" : "unblock",
+      userId,
+      userName,
+      currentState: canLogin,
+    })
+    setBlockLoginDialogOpen(true)
+  }
+
+  const confirmBlockLoginAction = async () => {
+    if (!pendingAction) return
+
+    setBlockLoginDialogOpen(false)
+    setProcessingId(`${pendingAction.userId}-login`)
     try {
       const supabase = createClient()
       await supabase
         .from("profiles")
-        .update({ can_login: !canLogin, updated_at: new Date().toISOString() })
-        .eq("id", userId)
+        .update({
+          can_login: !pendingAction.currentState,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", pendingAction.userId)
 
       router.refresh()
     } catch (error) {
       console.error("Error toggling login:", error)
     } finally {
       setProcessingId(null)
+      setPendingAction(null)
     }
   }
 
   return (
-    <div className="space-y-2">
-      {users.map((user) => {
+    <>
+      <div className="space-y-2">
+        {users.map((user) => {
         const status = statusConfig[user.status]
         const StatusIcon = status.icon
 
@@ -180,7 +233,7 @@ export function AllUsersTab({ users }: AllUsersTabProps) {
                   </Button>
 
                   <Button
-                    onClick={() => toggleActivePlayer(user.id, user.is_active_player ?? true)}
+                    onClick={() => handleSuspendClick(user.id, user.name, user.is_active_player ?? true)}
                     disabled={processingId === `${user.id}-player` || (user.is_admin && user.id === currentUserId)}
                     variant="outline"
                     size="sm"
@@ -207,7 +260,7 @@ export function AllUsersTab({ users }: AllUsersTabProps) {
                   </Button>
 
                   <Button
-                    onClick={() => toggleLogin(user.id, user.can_login ?? true)}
+                    onClick={() => handleBlockLoginClick(user.id, user.name, user.can_login ?? true)}
                     disabled={processingId === `${user.id}-login` || (user.is_admin && user.id === currentUserId)}
                     variant="outline"
                     size="sm"
@@ -238,6 +291,107 @@ export function AllUsersTab({ users }: AllUsersTabProps) {
           </Card>
         )
       })}
-    </div>
+      </div>
+
+      {/* Diálogo de confirmación para suspender/activar jugador */}
+      <AlertDialog open={suspendDialogOpen} onOpenChange={setSuspendDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingAction?.type === "suspend" ? "¿Suspender jugador?" : "¿Activar jugador?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              {pendingAction?.type === "suspend" ? (
+                <>
+                  <p>
+                    Estás a punto de <strong>suspender</strong> a <strong>{pendingAction.userName}</strong>.
+                  </p>
+                  <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 space-y-1 text-sm">
+                    <p className="font-medium text-amber-900 dark:text-amber-100">Consecuencias:</p>
+                    <ul className="list-disc list-inside space-y-1 text-amber-800 dark:text-amber-200">
+                      <li>No podrá ser agregado a nuevas partidas</li>
+                      <li>Seguirá apareciendo en los rankings históricos</li>
+                      <li>Todas sus validaciones pendientes se aprobarán automáticamente</li>
+                    </ul>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p>
+                    Estás a punto de <strong>activar</strong> a <strong>{pendingAction?.userName}</strong>.
+                  </p>
+                  <p className="text-muted-foreground">
+                    El jugador podrá ser agregado nuevamente a nuevas partidas.
+                  </p>
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmSuspendAction}
+              className={
+                pendingAction?.type === "suspend"
+                  ? "bg-amber-600 hover:bg-amber-700"
+                  : "bg-emerald-600 hover:bg-emerald-700"
+              }
+            >
+              {pendingAction?.type === "suspend" ? "Suspender" : "Activar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Diálogo de confirmación para bloquear/habilitar login */}
+      <AlertDialog open={blockLoginDialogOpen} onOpenChange={setBlockLoginDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingAction?.type === "block" ? "¿Bloquear acceso?" : "¿Habilitar acceso?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              {pendingAction?.type === "block" ? (
+                <>
+                  <p>
+                    Estás a punto de <strong>bloquear el acceso</strong> de <strong>{pendingAction.userName}</strong>.
+                  </p>
+                  <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-3 space-y-1 text-sm">
+                    <p className="font-medium text-red-900 dark:text-red-100">Consecuencias:</p>
+                    <ul className="list-disc list-inside space-y-1 text-red-800 dark:text-red-200">
+                      <li>No podrá iniciar sesión en la aplicación</li>
+                      <li>Quedará completamente bloqueado hasta que habilites su acceso</li>
+                      <li>No podrá acceder a ninguna funcionalidad de la aplicación</li>
+                    </ul>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p>
+                    Estás a punto de <strong>habilitar el acceso</strong> de <strong>{pendingAction?.userName}</strong>.
+                  </p>
+                  <p className="text-muted-foreground">
+                    El usuario podrá iniciar sesión nuevamente en la aplicación.
+                  </p>
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmBlockLoginAction}
+              className={
+                pendingAction?.type === "block"
+                  ? "bg-red-600 hover:bg-red-700"
+                  : "bg-emerald-600 hover:bg-emerald-700"
+              }
+            >
+              {pendingAction?.type === "block" ? "Bloquear acceso" : "Habilitar acceso"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }
