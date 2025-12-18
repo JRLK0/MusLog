@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
-import { AlertCircle, Loader2, Plus, RefreshCw, Search } from "lucide-react"
+import { AlertCircle, Loader2, Plus, RefreshCw, Search, Power, PowerOff } from "lucide-react"
 
 interface SeasonPlayersTabProps {
   activeSeason: Season | null
@@ -115,6 +115,25 @@ export function SeasonPlayersTab({ activeSeason }: SeasonPlayersTabProps) {
     }
   }
 
+  const handleToggleActive = async (playerId: string, currentStatus: boolean) => {
+    if (!activeSeason) return
+    setProcessingId(playerId)
+    try {
+      const supabase = createClient()
+      await supabase
+        .from("season_players")
+        .update({
+          is_active: !currentStatus,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", playerId)
+      await fetchActivePlayers()
+      router.refresh()
+    } finally {
+      setProcessingId(null)
+    }
+  }
+
   const inactiveSuggestion = useMemo(() => {
     return suggestions.find((s) => !s.is_active)
   }, [suggestions])
@@ -208,13 +227,37 @@ export function SeasonPlayersTab({ activeSeason }: SeasonPlayersTabProps) {
           ) : (
             players.map((player) => (
               <div key={player.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                <div className="space-y-0.5">
-                  <p className="font-medium">{player.name}</p>
+                <div className="space-y-0.5 flex-1 min-w-0">
+                  <p className="font-medium truncate">{player.name}</p>
                   <p className="text-xs text-muted-foreground">Creado el {new Date(player.created_at).toLocaleDateString()}</p>
                 </div>
-                <Badge variant={player.is_active ? "default" : "secondary"}>
-                  {player.is_active ? "Activo" : "Inactivo"}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant={player.is_active ? "default" : "secondary"}>
+                    {player.is_active ? "Activo" : "Inactivo"}
+                  </Badge>
+                  <Button
+                    onClick={() => handleToggleActive(player.id, player.is_active)}
+                    disabled={processingId === player.id}
+                    variant="outline"
+                    size="sm"
+                    className={player.is_active ? "text-amber-600 hover:text-amber-700" : "text-emerald-600 hover:text-emerald-700"}
+                    title={player.is_active ? "Desactivar jugador (no se podrá agregar a nuevas partidas)" : "Activar jugador"}
+                  >
+                    {processingId === player.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : player.is_active ? (
+                      <>
+                        <PowerOff className="h-4 w-4 mr-1" />
+                        Desactivar
+                      </>
+                    ) : (
+                      <>
+                        <Power className="h-4 w-4 mr-1" />
+                        Activar
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             ))
           )}

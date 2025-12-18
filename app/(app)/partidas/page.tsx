@@ -46,11 +46,14 @@ export default async function PartidasPage() {
     .from("profiles")
     .select("id, name")
     .eq("status", "approved")
+    .or("is_active_player.is.null,is_active_player.eq.true")
     .order("name")
 
+  // Obtener solo jugadores temporales activos para el filtro (los inactivos pueden aparecer en partidas históricas)
   const { data: tempPlayers } = await supabase
     .from("season_players")
     .select("id, name, season_id, is_active")
+    .eq("is_active", true)
     .order("name")
 
   return (

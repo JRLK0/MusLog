@@ -20,7 +20,8 @@ export default function NuevaPartidaPage() {
   const [player3, setPlayer3] = useState("")
   const [player4, setPlayer4] = useState("")
   const [winnerTeam, setWinnerTeam] = useState<"1" | "2">("1")
-  const [team1Score, setTeam1Score] = useState("3")
+  // Marcador inicial: 0-0
+  const [team1Score, setTeam1Score] = useState("0")
   const [team2Score, setTeam2Score] = useState("0")
   const [playedAt, setPlayedAt] = useState(new Date().toISOString().slice(0, 16))
   const [isLoading, setIsLoading] = useState(false)
@@ -31,7 +32,12 @@ export default function NuevaPartidaPage() {
   useEffect(() => {
     async function fetchPlayers() {
       const supabase = createClient()
-      const { data: approved } = await supabase.from("profiles").select("*").eq("status", "approved").order("name")
+      const { data: approved } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("status", "approved")
+        .or("is_active_player.is.null,is_active_player.eq.true")
+        .order("name")
 
       // Buscar temporada activa y jugadores temporales activos de esa temporada
       const { data: activeSeason } = await supabase.from("seasons").select("id, name").eq("is_active", true).maybeSingle()

@@ -165,10 +165,10 @@ export function MatchCard({ match, currentUserId, isAdmin }: MatchCardProps) {
   const StatusIcon = status.icon
 
   return (
-    <Card className="border shadow-md overflow-hidden hover:shadow-xl hover:scale-[1.01] transition-all duration-300 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
+    <Card className="border border-slate-200 dark:border-slate-700 shadow-md overflow-hidden hover:shadow-xl hover:scale-[1.01] transition-all duration-300 cursor-pointer bg-white dark:bg-slate-900/50" onClick={() => setIsExpanded(!isExpanded)}>
       <CardContent className="p-0">
         {/* Header clickeable con resumen */}
-        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-slate-50 to-slate-100/50 dark:from-slate-800/50 dark:to-slate-900/50 border-b hover:from-slate-100 hover:to-slate-200/50 dark:hover:from-slate-700/50 dark:hover:to-slate-800/50 transition-all duration-200">
+        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-50/50 to-indigo-50/30 dark:from-blue-950/20 dark:to-indigo-950/20 border-b border-blue-100/50 dark:border-blue-900/30 hover:from-blue-100/70 hover:to-indigo-100/50 dark:hover:from-blue-900/30 dark:hover:to-indigo-900/30 transition-all duration-200">
           <div className="flex items-center gap-3 flex-1 min-w-0" onClick={() => setIsExpanded(!isExpanded)}>
             <ChevronRight 
               className={`h-5 w-5 text-muted-foreground transition-transform flex-shrink-0 ${isExpanded ? 'rotate-90' : ''}`}

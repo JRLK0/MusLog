@@ -314,7 +314,7 @@ export function MatchList({ matches, currentUserId, isAdmin, seasons, players }:
         <div className="space-y-6">
           {Object.entries(groupedMatches).map(([date, dateMatches]) => (
             <div key={date} className="space-y-3">
-              <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-md py-3 mb-2 border-b-2 border-primary/20 dark:border-primary/30 shadow-sm">
+              <div className="sticky top-0 z-10 bg-emerald-50/80 dark:bg-emerald-950/50 backdrop-blur-md py-3 mb-2 border-b-2 border-emerald-200 dark:border-emerald-800 shadow-sm">
                 <h2 className="text-base font-bold text-foreground uppercase tracking-wide flex items-center gap-2">
                   <span className="text-muted-foreground font-normal normal-case text-sm">
                     {new Date(dateMatches[0].played_at).toLocaleDateString('es-ES', { weekday: 'long' })}
@@ -326,7 +326,7 @@ export function MatchList({ matches, currentUserId, isAdmin, seasons, players }:
                   </span>
                 </h2>
               </div>
-              <div className="space-y-2 pl-2 border-l-2 border-primary/20 dark:border-primary/30">
+              <div className="space-y-2 pl-2 border-l-2 border-emerald-200 dark:border-emerald-800">
                 {dateMatches.map((match) => (
                   <MatchCard key={match.id} match={match} currentUserId={currentUserId} isAdmin={isAdmin} />
                 ))}

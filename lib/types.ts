@@ -4,6 +4,8 @@ export interface Profile {
   email: string | null
   status: "pending" | "approved" | "rejected"
   is_admin: boolean
+  is_active_player?: boolean
+  can_login?: boolean
   created_at: string
   updated_at: string
 }

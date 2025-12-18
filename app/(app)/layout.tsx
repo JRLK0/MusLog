@@ -51,6 +51,20 @@ export default async function AppLayout({
     )
   }
 
+  if (profile?.can_login === false) {
+    return (
+      <div className="flex min-h-svh flex-col items-center justify-center p-4 text-center">
+        <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-red-100 to-emerald-100 dark:from-red-900/30 dark:to-emerald-900/30 shadow-lg">
+          <span className="text-4xl">🔒</span>
+        </div>
+        <h1 className="text-2xl font-bold mb-2 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">Acceso bloqueado</h1>
+        <p className="text-muted-foreground max-w-sm">
+          Tu acceso a la aplicación ha sido bloqueado por un administrador. Contacta con un administrador para habilitarlo nuevamente.
+        </p>
+      </div>
+    )
+  }
+
   let pendingUsersCount = 0
   if (profile?.is_admin) {
     const { count } = await supabase
