@@ -39,6 +39,10 @@ export default async function AdminPage() {
       player2:profiles!matches_player2_id_fkey(id, name),
       player3:profiles!matches_player3_id_fkey(id, name),
       player4:profiles!matches_player4_id_fkey(id, name),
+      temp_player1:season_players!matches_temp_player1_id_fkey(id, name, season_id),
+      temp_player2:season_players!matches_temp_player2_id_fkey(id, name, season_id),
+      temp_player3:season_players!matches_temp_player3_id_fkey(id, name, season_id),
+      temp_player4:season_players!matches_temp_player4_id_fkey(id, name, season_id),
       creator:profiles!matches_created_by_fkey(id, name),
       validations:match_validations(
         id,

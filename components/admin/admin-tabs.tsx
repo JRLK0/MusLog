@@ -7,6 +7,7 @@ import { AllUsersTab } from "./all-users-tab"
 import { PendingMatchesTab } from "./pending-matches-tab"
 import { SeasonsTab } from "./seasons-tab"
 import type { Profile, Match, Season } from "@/lib/types"
+import { SeasonPlayersTab } from "./season-players-tab"
 import { Users, UserCheck, Trophy, Calendar } from "lucide-react"
 
 interface AdminTabsProps {
@@ -28,7 +29,7 @@ export function AdminTabs({
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-      <TabsList className="grid w-full grid-cols-4">
+      <TabsList className="grid w-full grid-cols-5">
         <TabsTrigger value="pending-users" className="text-xs">
           <UserCheck className="h-4 w-4 mr-1" />
           Solicitudes ({pendingUsers.length})
@@ -40,6 +41,10 @@ export function AdminTabs({
         <TabsTrigger value="pending-matches" className="text-xs">
           <Trophy className="h-4 w-4 mr-1" />
           Partidas ({pendingMatches.length})
+        </TabsTrigger>
+        <TabsTrigger value="season-players" className="text-xs">
+          <Users className="h-4 w-4 mr-1" />
+          Jugadores temporales
         </TabsTrigger>
         <TabsTrigger value="seasons" className="text-xs">
           <Calendar className="h-4 w-4 mr-1" />
@@ -57,6 +62,10 @@ export function AdminTabs({
 
       <TabsContent value="pending-matches">
         <PendingMatchesTab matches={pendingMatches} />
+      </TabsContent>
+
+      <TabsContent value="season-players">
+        <SeasonPlayersTab activeSeason={activeSeason} />
       </TabsContent>
 
       <TabsContent value="seasons">

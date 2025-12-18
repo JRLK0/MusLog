@@ -4,19 +4,21 @@ import { useState, useMemo } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import type { Season, Match, Profile } from "@/lib/types"
+import type { Season, Match, Profile, SeasonPlayer } from "@/lib/types"
 import { calculateAllPlayerStats } from "@/lib/season-stats"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
-import { Calendar, Trophy, Users, Award, Crown, Medal } from "lucide-react"
+import { Calendar, Trophy, Users, Award, Crown, Medal, Share2 } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 interface SeasonHistoryClientProps {
   seasons: Season[]
   matches: Match[]
   profiles: Array<{ id: string; name: string }>
+  seasonPlayers: Array<Pick<SeasonPlayer, "id" | "name" | "season_id" | "is_active">>
 }
 
-export function SeasonHistoryClient({ seasons, matches, profiles }: SeasonHistoryClientProps) {
+export function SeasonHistoryClient({ seasons, matches, profiles, seasonPlayers }: SeasonHistoryClientProps) {
   const activeSeason = seasons.find((s) => s.is_active)
   const closedSeasons = seasons.filter((s) => !s.is_active)
   const [selectedSeasonId, setSelectedSeasonId] = useState<string>(
@@ -27,7 +29,9 @@ export function SeasonHistoryClient({ seasons, matches, profiles }: SeasonHistor
   const seasonStats = useMemo(() => {
     return seasons.map((season) => {
       const seasonMatches = matches.filter((m) => m.season_id === season.id)
-      const stats = calculateAllPlayerStats(seasonMatches, profiles)
+      const temps = seasonPlayers.filter((p) => p.season_id === season.id)
+      const playersForSeason = [...profiles, ...temps.map((t) => ({ id: t.id, name: t.name }))]
+      const stats = calculateAllPlayerStats(seasonMatches, playersForSeason)
 
       // Ordenar por win rate y victorias
       const sortedStats = [...stats].sort((a, b) => {
@@ -59,6 +63,50 @@ export function SeasonHistoryClient({ seasons, matches, profiles }: SeasonHistor
 
   const selectedSeason = seasons.find((s) => s.id === selectedSeasonId)
   const selectedStats = seasonStats.find((s) => s.season.id === selectedSeasonId)
+
+  const generateWhatsAppMessage = () => {
+    if (!selectedSeason || !selectedStats) return ""
+
+    const seasonName = selectedSeason.name
+    const startDate = format(new Date(selectedSeason.start_date), "d MMM yyyy", { locale: es })
+    const endDate = selectedSeason.end_date
+      ? format(new Date(selectedSeason.end_date), "d MMM yyyy", { locale: es })
+      : "Activa"
+    const totalMatches = selectedStats.totalMatches
+
+    // Filtrar solo jugadores que han jugado al menos una partida
+    const playersWithMatches = selectedStats.playerStats.filter((p) => p.total_matches > 0)
+
+    let message = `*${seasonName}*\n\n`
+    message += `Fecha: ${startDate} - ${endDate}\n`
+    message += `Total de partidas: ${totalMatches}\n\n`
+
+    if (playersWithMatches.length > 0) {
+      message += `*Ranking de Jugadores:*\n\n`
+
+      playersWithMatches.forEach((player, index) => {
+        const position = index + 1
+        const medal = index === 0 ? "1. " : index === 1 ? "2. " : index === 2 ? "3. " : `${position}. `
+        
+        message += `${medal}*${player.name}*\n`
+        message += `   ${player.wins} victorias - ${player.losses} derrotas\n`
+        message += `   Win Rate: ${player.win_rate.toFixed(0)}% (${player.total_matches} partidas)\n\n`
+      })
+    } else {
+      message += `No hay partidas validadas en esta temporada.\n`
+    }
+
+    return message
+  }
+
+  const handleShareWhatsApp = () => {
+    const message = generateWhatsAppMessage()
+    if (!message) return
+
+    const encodedMessage = encodeURIComponent(message)
+    const whatsappUrl = `https://wa.me/?text=${encodedMessage}`
+    window.open(whatsappUrl, "_blank")
+  }
 
   return (
     <div className="p-4 space-y-6">
@@ -102,7 +150,7 @@ export function SeasonHistoryClient({ seasons, matches, profiles }: SeasonHistor
           <CardContent className="p-4">
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
                   {selectedSeason.is_active ? (
                     <Badge className="bg-emerald-600 text-white">Activa</Badge>
                   ) : (
@@ -127,11 +175,23 @@ export function SeasonHistoryClient({ seasons, matches, profiles }: SeasonHistor
                   )}
                 </div>
               </div>
-              <div className="text-right">
-                <div className={`text-2xl font-bold ${selectedSeason.is_active ? "text-emerald-600" : "text-blue-600"}`}>
-                  {selectedStats.totalMatches}
+              <div className="flex flex-col items-end gap-2">
+                <div className="text-right">
+                  <div className={`text-2xl font-bold ${selectedSeason.is_active ? "text-emerald-600" : "text-blue-600"}`}>
+                    {selectedStats.totalMatches}
+                  </div>
+                  <div className="text-xs text-muted-foreground">Partidas validadas</div>
                 </div>
-                <div className="text-xs text-muted-foreground">Partidas validadas</div>
+                {selectedStats.totalMatches > 0 && (
+                  <Button
+                    onClick={handleShareWhatsApp}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                    size="sm"
+                  >
+                    <Share2 className="h-4 w-4 mr-2" />
+                    Compartir en WhatsApp
+                  </Button>
+                )}
               </div>
             </div>
 

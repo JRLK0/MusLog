@@ -16,7 +16,7 @@ interface MatchListProps {
   currentUserId: string
   isAdmin: boolean
   seasons: Season[]
-  players: Profile[]
+  players: Array<Profile & { is_temp?: boolean; season_id?: string; is_active?: boolean }>
 }
 
 export function MatchList({ matches, currentUserId, isAdmin, seasons, players }: MatchListProps) {
@@ -39,6 +39,10 @@ export function MatchList({ matches, currentUserId, isAdmin, seasons, players }:
       match.player3?.name || "",
       match.player4?.name || "",
       match.creator?.name || "",
+      match.temp_player1?.name || "",
+      match.temp_player2?.name || "",
+      match.temp_player3?.name || "",
+      match.temp_player4?.name || "",
       format(new Date(match.played_at), "d MMM yyyy", { locale: es }),
       format(new Date(match.played_at), "EEEE", { locale: es }),
       match.team1_score.toString(),
@@ -69,7 +73,16 @@ export function MatchList({ matches, currentUserId, isAdmin, seasons, players }:
 
       // Filtro de jugador
       if (selectedPlayer !== "all") {
-        const playerIds = [match.player1_id, match.player2_id, match.player3_id, match.player4_id]
+        const playerIds = [
+          match.player1_id,
+          match.player2_id,
+          match.player3_id,
+          match.player4_id,
+          match.temp_player1_id,
+          match.temp_player2_id,
+          match.temp_player3_id,
+          match.temp_player4_id,
+        ].filter(Boolean)
         if (!playerIds.includes(selectedPlayer)) return false
       }
 
@@ -227,7 +240,7 @@ export function MatchList({ matches, currentUserId, isAdmin, seasons, players }:
                   <SelectItem value="all">Todos los jugadores</SelectItem>
                   {players.map((player) => (
                     <SelectItem key={player.id} value={player.id}>
-                      {player.name}
+                      {player.name} {player.is_temp ? "(Temporal)" : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -35,15 +35,15 @@ export function calculatePlayerStats(matches: Match[], playerId: string): Player
  */
 export function calculateAllPlayerStats(
   matches: Match[],
-  profiles: Array<{ id: string; name: string }>,
+  players: Array<{ id: string; name: string }>,
 ): PlayerStats[] {
   const playerStatsMap = new Map<string, PlayerStats>()
 
-  // Inicializar estadísticas para todos los perfiles
-  profiles.forEach((profile) => {
-    playerStatsMap.set(profile.id, {
-      id: profile.id,
-      name: profile.name,
+  // Inicializar estadísticas para todos los jugadores (registrados o temporales)
+  players.forEach((player) => {
+    playerStatsMap.set(player.id, {
+      id: player.id,
+      name: player.name,
       total_matches: 0,
       wins: 0,
       losses: 0,
@@ -53,15 +53,24 @@ export function calculateAllPlayerStats(
 
   // Calcular estadísticas basándose en las partidas
   matches.forEach((match) => {
-    const players = [match.player1_id, match.player2_id, match.player3_id, match.player4_id]
+    const playersInMatch = [
+      { id: match.player1_id, name: match.player1?.name },
+      { id: match.player2_id, name: match.player2?.name },
+      { id: match.player3_id, name: match.player3?.name },
+      { id: match.player4_id, name: match.player4?.name },
+      { id: match.temp_player1_id, name: match.temp_player1?.name },
+      { id: match.temp_player2_id, name: match.temp_player2?.name },
+      { id: match.temp_player3_id, name: match.temp_player3?.name },
+      { id: match.temp_player4_id, name: match.temp_player4?.name },
+    ].filter((p) => p.id)
 
-    players.forEach((playerId) => {
-      const stats = playerStatsMap.get(playerId)
+    playersInMatch.forEach((player) => {
+      const stats = playerStatsMap.get(player.id!)
       if (!stats) return
-
       stats.total_matches++
 
-      const isInTeam1 = match.player1_id === playerId || match.player2_id === playerId
+      const isInTeam1 =
+        match.player1_id === player.id || match.player2_id === player.id || match.temp_player1_id === player.id || match.temp_player2_id === player.id
       const isWinner = (isInTeam1 && match.winner_team === 1) || (!isInTeam1 && match.winner_team === 2)
 
       if (isWinner) {
