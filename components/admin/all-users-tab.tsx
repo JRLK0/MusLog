@@ -213,11 +213,17 @@ export function AllUsersTab({ users }: AllUsersTabProps) {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <Button
                     onClick={() => toggleAdmin(user.id, user.is_admin)}
-                    disabled={processingId === user.id || (user.is_admin && user.id === currentUserId)}
+                    disabled={processingId === user.id || (user.is_admin && user.id === currentUserId) || user.email === 'admin@megia.eu'}
                     variant="outline"
                     size="sm"
                     className={user.is_admin ? "text-red-600" : "text-blue-600"}
-                    title={user.is_admin && user.id === currentUserId ? "No puedes quitarte el rol de admin a ti mismo" : undefined}
+                    title={
+                      user.email === 'admin@megia.eu' 
+                        ? "Este usuario es el super administrador y no puede ser modificado"
+                        : user.is_admin && user.id === currentUserId 
+                          ? "No puedes quitarte el rol de admin a ti mismo" 
+                          : undefined
+                    }
                   >
                     {user.is_admin ? (
                       <>
@@ -234,16 +240,18 @@ export function AllUsersTab({ users }: AllUsersTabProps) {
 
                   <Button
                     onClick={() => handleSuspendClick(user.id, user.name, user.is_active_player ?? true)}
-                    disabled={processingId === `${user.id}-player` || (user.is_admin && user.id === currentUserId)}
+                    disabled={processingId === `${user.id}-player` || (user.is_admin && user.id === currentUserId) || user.email === 'admin@megia.eu'}
                     variant="outline"
                     size="sm"
                     className={user.is_active_player === false ? "text-amber-700" : "text-emerald-700"}
                     title={
-                      user.is_admin && user.id === currentUserId
-                        ? "No puedes suspenderse a ti mismo como administrador"
-                        : user.is_active_player === false
-                        ? "Activar jugador"
-                        : "Suspender jugador"
+                      user.email === 'admin@megia.eu'
+                        ? "Este usuario no puede ser suspendido"
+                        : user.is_admin && user.id === currentUserId
+                          ? "No puedes suspenderse a ti mismo como administrador"
+                          : user.is_active_player === false
+                            ? "Activar jugador"
+                            : "Suspender jugador"
                     }
                   >
                     {user.is_active_player === false ? (
@@ -261,16 +269,18 @@ export function AllUsersTab({ users }: AllUsersTabProps) {
 
                   <Button
                     onClick={() => handleBlockLoginClick(user.id, user.name, user.can_login ?? true)}
-                    disabled={processingId === `${user.id}-login` || (user.is_admin && user.id === currentUserId)}
+                    disabled={processingId === `${user.id}-login` || (user.is_admin && user.id === currentUserId) || user.email === 'admin@megia.eu'}
                     variant="outline"
                     size="sm"
                     className={user.can_login === false ? "text-emerald-700" : "text-red-700"}
                     title={
-                      user.is_admin && user.id === currentUserId
-                        ? "No puedes bloquear tu propio acceso como administrador"
-                        : user.can_login === false
-                        ? "Habilitar login"
-                        : "Bloquear login"
+                      user.email === 'admin@megia.eu'
+                        ? "El login de este usuario no puede ser bloqueado"
+                        : user.is_admin && user.id === currentUserId
+                          ? "No puedes bloquear tu propio acceso como administrador"
+                          : user.can_login === false
+                            ? "Habilitar login"
+                            : "Bloquear login"
                     }
                   >
                     {user.can_login === false ? (

@@ -32,9 +32,10 @@ export function SeasonHistoryClient({ seasons, matches, profiles, seasonPlayers 
       const temps = seasonPlayers.filter((p) => p.season_id === season.id)
       const playersForSeason = [...profiles, ...temps.map((t) => ({ id: t.id, name: t.name }))]
       const stats = calculateAllPlayerStats(seasonMatches, playersForSeason)
+      const activeStats = stats.filter((p) => p.total_matches > 0)
 
       // Ordenar por win rate y victorias
-      const sortedStats = [...stats].sort((a, b) => {
+      const sortedStats = [...activeStats].sort((a, b) => {
         if (a.total_matches >= 3 && b.total_matches < 3) return -1
         if (b.total_matches >= 3 && a.total_matches < 3) return 1
         if (a.win_rate !== b.win_rate) return b.win_rate - a.win_rate

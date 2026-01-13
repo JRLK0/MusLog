@@ -53,8 +53,11 @@ export default function NuevaPartidaPage() {
       }
 
       if (approved) {
+        // Filter out super admin from being selected in matches
+        const filteredApproved = approved.filter(p => p.email !== 'admin@megia.eu')
+        
         const normalized = [
-          ...approved,
+          ...filteredApproved,
           ...tempPlayers.map((t) => ({ ...t, type: "temp" as const })),
         ]
         setPlayers(normalized)
