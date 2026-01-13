@@ -58,6 +58,9 @@ Crea un archivo `.env.local` con:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=tu_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_supabase_anon_key
+DATABASE_URL=tu_connection_string_postgres
+# Opcional: desactiva migraciones automáticas (por ejemplo en un build donde no quieras tocar la BBDD)
+# SKIP_DB_MIGRATIONS=true
 ```
 
 4. Ejecuta las migraciones SQL:
@@ -148,8 +151,22 @@ Los scripts SQL de migración se encuentran en la carpeta `scripts/` y deben eje
 
 ### Variables de entorno requeridas
 
-- `NEXT_PUBLIC_SUPABASE_URL`: URL de tu proyecto Supabase
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Clave anónima de Supabase
+- `NEXT_PUBLIC_SUPABASE_URL`: URL de tu proyecto Supabase (ej: `https://<project-ref>.supabase.co`)
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Clave pública del cliente (en Supabase puede aparecer como **anon key** o como **publishable key**)
+- `DATABASE_URL`: Connection string a Postgres (requerida para aplicar automáticamente los SQL de `scripts/` al hacer `npm run dev/build/start`)
+
+### Migraciones automáticas (scripts/)
+
+Este proyecto aplica automáticamente los `.sql` de `scripts/` cuando ejecutas:
+- `npm run dev`
+- `npm run build`
+- `npm start`
+
+Guarda cuáles ya se aplicaron en `public.schema_migrations` y solo ejecuta las pendientes.
+
+Variables relacionadas:
+- `DATABASE_URL`: **obligatoria** para que se apliquen
+- `SKIP_DB_MIGRATIONS=true`: desactiva la aplicación automática
 
 ## 📝 Scripts disponibles
 
