@@ -15,11 +15,7 @@ export default async function PerfilPage() {
 
   const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
 
-  console.log("[PerfilPage] User ID:", user.id)
-  console.log("[PerfilPage] Profile fetched:", profile)
-
   if (!profile || profile.status !== "approved") {
-    console.log("[PerfilPage] Redirecting to login because status is", profile?.status)
     redirect("/auth/login")
   }
 
