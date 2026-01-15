@@ -90,6 +90,34 @@ export async function POST(request: Request) {
     )
   }
 
+  const { data: targetProfile, error: targetProfileError } = await supabaseAdmin
+    .from("profiles")
+    .select("name")
+    .eq("id", payload.targetUserId)
+    .maybeSingle()
+
+  if (targetProfileError) {
+    return NextResponse.json(
+      { success: false, error: "No se pudo obtener el perfil del usuario a borrar." },
+      { status: 400 }
+    )
+  }
+
+  const displayName =
+    targetProfile?.name?.trim() || targetUser?.user?.email || "Usuario eliminado"
+
+  const { error: temporizeError } = await supabaseAdmin.rpc("temporize_user_matches", {
+    target_user_id: payload.targetUserId,
+    display_name: displayName,
+  })
+
+  if (temporizeError) {
+    return NextResponse.json(
+      { success: false, error: "No se pudo temporizar las partidas del usuario." },
+      { status: 500 }
+    )
+  }
+
   const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(payload.targetUserId)
 
   if (deleteError) {
