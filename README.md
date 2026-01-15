@@ -58,6 +58,9 @@ Crea un archivo `.env.local` con:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=tu_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=tu_supabase_service_role_key
+# Alternativa si no usas SUPABASE_SERVICE_ROLE_KEY:
+SUPABASE_SECRET_KEY=tu_supabase_secret_key
 DATABASE_URL=tu_connection_string_postgres
 # Opcional: desactiva migraciones automáticas (por ejemplo en un build donde no quieras tocar la BBDD)
 # SKIP_DB_MIGRATIONS=true
@@ -153,6 +156,8 @@ Los scripts SQL de migración se encuentran en la carpeta `scripts/` y deben eje
 
 - `NEXT_PUBLIC_SUPABASE_URL`: URL de tu proyecto Supabase (ej: `https://<project-ref>.supabase.co`)
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Clave pública del cliente (en Supabase puede aparecer como **anon key** o como **publishable key**)
+- `SUPABASE_SERVICE_ROLE_KEY`: Clave **service role** necesaria para borrar usuarios desde el panel de administración (o usa `SUPABASE_SECRET_KEY` si no dispones de ella)
+- `SUPABASE_SECRET_KEY`: Alternativa a `SUPABASE_SERVICE_ROLE_KEY` para habilitar el borrado de usuarios
 - `DATABASE_URL`: Connection string a Postgres (requerida para aplicar automáticamente los SQL de `scripts/` al hacer `npm run dev/build/start`)
 
 ### Migraciones automáticas (scripts/)
