@@ -153,6 +153,7 @@ Los scripts SQL de migración se encuentran en la carpeta `scripts/` y deben eje
 
 - `NEXT_PUBLIC_SUPABASE_URL`: URL de tu proyecto Supabase (ej: `https://<project-ref>.supabase.co`)
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Clave pública del cliente (en Supabase puede aparecer como **anon key** o como **publishable key**)
+- `SUPABASE_SERVICE_ROLE_KEY` o `SUPABASE_SECRET_KEY`: Clave de servicio para operaciones administrativas seguras (requerida para borrar usuarios y ejecutar RPCs protegidas)
 - `DATABASE_URL`: Connection string a Postgres (requerida para aplicar automáticamente los SQL de `scripts/` al hacer `npm run dev/build/start`)
 
 ### Migraciones automáticas (scripts/)

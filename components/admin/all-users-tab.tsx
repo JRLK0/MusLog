@@ -26,14 +26,21 @@ interface AllUsersTabProps {
 export function AllUsersTab({ users }: AllUsersTabProps) {
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null)
   const [currentUserIsAdmin, setCurrentUserIsAdmin] = useState<boolean>(false)
   const [suspendDialogOpen, setSuspendDialogOpen] = useState(false)
   const [blockLoginDialogOpen, setBlockLoginDialogOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [pendingAction, setPendingAction] = useState<{
     type: "suspend" | "activate" | "block" | "unblock"
     userId: string
     userName: string
     currentState: boolean
+  } | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<{
+    userId: string
+    userName: string
+    userEmail: string | null
   } | null>(null)
   const router = useRouter()
 
@@ -43,6 +50,7 @@ export function AllUsersTab({ users }: AllUsersTabProps) {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         setCurrentUserId(user.id)
+        setCurrentUserEmail(user.email ?? null)
         // Obtener el perfil del usuario actual para verificar si es admin
         const { data: profile } = await supabase
           .from("profiles")
@@ -166,6 +174,44 @@ export function AllUsersTab({ users }: AllUsersTabProps) {
     }
   }
 
+  const handleDeleteClick = (userId: string, userName: string, userEmail: string | null) => {
+    setPendingDelete({ userId, userName, userEmail })
+    setDeleteDialogOpen(true)
+  }
+
+  const confirmDeleteAction = async () => {
+    if (!pendingDelete) return
+
+    setDeleteDialogOpen(false)
+    setProcessingId(`${pendingDelete.userId}-delete`)
+    try {
+      const response = await fetch("/api/admin/delete-user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: pendingDelete.userId,
+          displayName: pendingDelete.userName,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null)
+        const message = errorData?.error ?? "No se pudo borrar el usuario"
+        alert(message)
+        return
+      }
+
+      router.refresh()
+    } catch (error) {
+      console.error("Error deleting user:", error)
+    } finally {
+      setProcessingId(null)
+      setPendingDelete(null)
+    }
+  }
+
   return (
     <>
       <div className="space-y-2">
@@ -210,7 +256,7 @@ export function AllUsersTab({ users }: AllUsersTabProps) {
               </div>
 
               {user.status === "approved" && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
                   <Button
                     onClick={() => toggleAdmin(user.id, user.is_admin)}
                     disabled={processingId === user.id || (user.is_admin && user.id === currentUserId) || user.email === 'admin@megia.eu'}
@@ -295,6 +341,24 @@ export function AllUsersTab({ users }: AllUsersTabProps) {
                       </>
                     )}
                   </Button>
+
+                  {currentUserEmail === "admin@megia.eu" && (
+                    <Button
+                      onClick={() => handleDeleteClick(user.id, user.name, user.email)}
+                      disabled={processingId === `${user.id}-delete` || user.email === "admin@megia.eu"}
+                      variant="outline"
+                      size="sm"
+                      className="text-red-700"
+                      title={
+                        user.email === "admin@megia.eu"
+                          ? "El super administrador no puede borrarse"
+                          : "Borrar usuario"
+                      }
+                    >
+                      <UserX className="h-4 w-4 mr-1" />
+                      Borrar usuario
+                    </Button>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -398,6 +462,37 @@ export function AllUsersTab({ users }: AllUsersTabProps) {
               }
             >
               {pendingAction?.type === "block" ? "Bloquear acceso" : "Habilitar acceso"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Borrar usuario?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                Estás a punto de <strong>borrar</strong> al usuario{" "}
+                <strong>{pendingDelete?.userName}</strong>.
+              </p>
+              <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-3 space-y-1 text-sm">
+                <p className="font-medium text-red-900 dark:text-red-100">Consecuencias:</p>
+                <ul className="list-disc list-inside space-y-1 text-red-800 dark:text-red-200">
+                  <li>Se eliminará su cuenta de Auth</li>
+                  <li>El historial se mantendrá como jugador temporal</li>
+                  <li>Se marcará su perfil como rechazado e inactivo</li>
+                </ul>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteAction}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Borrar usuario
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
