@@ -10,9 +10,10 @@ import { Users, UserPlus } from "lucide-react"
 interface UsersTabProps {
   allUsers: Profile[]
   activeSeason: Season | null
+  emailVerificationMap: Record<string, boolean>
 }
 
-export function UsersTab({ allUsers, activeSeason }: UsersTabProps) {
+export function UsersTab({ allUsers, activeSeason, emailVerificationMap }: UsersTabProps) {
   const [activeSubTab, setActiveSubTab] = useState("registered")
 
   return (
@@ -29,7 +30,7 @@ export function UsersTab({ allUsers, activeSeason }: UsersTabProps) {
       </TabsList>
 
       <TabsContent value="registered">
-        <AllUsersTab users={allUsers} />
+        <AllUsersTab users={allUsers} emailVerificationMap={emailVerificationMap} />
       </TabsContent>
 
       <TabsContent value="temporary">

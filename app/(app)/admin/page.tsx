@@ -1,6 +1,10 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { AdminTabs } from "@/components/admin/admin-tabs"
+import { createClient as createSupabaseAdmin } from "@supabase/supabase-js"
+
+export const dynamic = "force-dynamic"
+export const revalidate = 0
 
 export default async function AdminPage() {
   const supabase = await createClient()
@@ -18,6 +22,67 @@ export default async function AdminPage() {
 
   if (!profile?.is_admin) {
     redirect("/partidas")
+  }
+
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_API_KEY
+  const emailVerificationMap: Record<string, boolean> = {}
+
+  if (serviceRoleKey) {
+    const supabaseAdmin = createSupabaseAdmin(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      serviceRoleKey,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    )
+
+    const perPage = 50
+    let page = 1
+    let hasMore = true
+
+    while (hasMore) {
+      const { data: authUsers, error: authUsersError } = await supabaseAdmin.auth.admin.listUsers({
+        page,
+        perPage,
+      })
+
+      if (authUsersError) {
+        hasMore = false
+        break
+      }
+
+      const usersBatch = Array.isArray(authUsers) ? authUsers : (authUsers as any)?.users ?? []
+      
+      if (usersBatch.length === 0) {
+        hasMore = false
+        break
+      }
+
+      usersBatch.forEach((authUser: any) => {
+        // Normalizar email a minúsculas para comparar
+        const email = authUser.email?.toLowerCase()
+        const isConfirmed = Boolean(authUser.email_confirmed_at || authUser.confirmed_at)
+        
+        // Mapear por ID
+        if (authUser.id) {
+          emailVerificationMap[authUser.id] = isConfirmed
+        }
+        
+        // Mapear también por email como fallback
+        if (email) {
+          emailVerificationMap[email] = isConfirmed
+        }
+      })
+
+      if (usersBatch.length < perPage) {
+        hasMore = false
+      } else {
+        page += 1
+      }
+    }
   }
 
   // Get pending users
@@ -84,6 +149,7 @@ export default async function AdminPage() {
         pendingMatches={pendingMatches || []}
         activeSeason={activeSeason || null}
         closedSeasons={closedSeasons || []}
+        emailVerificationMap={emailVerificationMap}
       />
     </div>
   )

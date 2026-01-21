@@ -24,6 +24,18 @@ export function PendingUsersTab({ users }: PendingUsersTabProps) {
       const supabase = createClient()
       await supabase.from("profiles").update({ status: action, updated_at: new Date().toISOString() }).eq("id", userId)
 
+      if (action === "approved") {
+        const response = await fetch("/api/admin/verify-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ targetUserId: userId }),
+        })
+        const result = await response.json().catch(() => ({}))
+        if (!response.ok || !result?.success) {
+          alert(result?.error || "No se pudo verificar el correo del usuario.")
+        }
+      }
+
       router.refresh()
     } catch (error) {
       console.error("Error updating user:", error)

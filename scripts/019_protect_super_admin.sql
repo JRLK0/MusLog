@@ -5,8 +5,11 @@ CREATE OR REPLACE FUNCTION public.protect_super_admin()
 RETURNS trigger AS $$
 BEGIN
   -- Prevent deletion of super admin
-  IF TG_OP = 'DELETE' AND OLD.email = 'admin@megia.eu' THEN
-    RAISE EXCEPTION 'No se puede eliminar al super administrador';
+  IF TG_OP = 'DELETE' THEN
+    IF OLD.email = 'admin@megia.eu' THEN
+      RAISE EXCEPTION 'No se puede eliminar al super administrador';
+    END IF;
+    RETURN OLD;
   END IF;
 
   -- Check updates
@@ -38,9 +41,10 @@ BEGIN
              RAISE EXCEPTION 'No se puede cambiar el estado del super administrador';
         END IF;
     END IF;
+    RETURN NEW;
   END IF;
 
-  RETURN NEW;
+  RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
 

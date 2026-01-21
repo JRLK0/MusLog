@@ -17,23 +17,33 @@ import {
 } from "@/components/ui/alert-dialog"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
-import { Shield, ShieldOff, CheckCircle, Clock, XCircle, UserX, UserCheck, Lock, Unlock } from "lucide-react"
+import { Shield, ShieldOff, CheckCircle, Clock, XCircle, UserX, UserCheck, Lock, Unlock, Mail } from "lucide-react"
 
 interface AllUsersTabProps {
   users: Profile[]
+  emailVerificationMap: Record<string, boolean>
 }
 
-export function AllUsersTab({ users }: AllUsersTabProps) {
+const SUPER_ADMIN_EMAIL = "admin@megia.eu"
+
+export function AllUsersTab({ users, emailVerificationMap }: AllUsersTabProps) {
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [currentUserIsAdmin, setCurrentUserIsAdmin] = useState<boolean>(false)
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null)
   const [suspendDialogOpen, setSuspendDialogOpen] = useState(false)
   const [blockLoginDialogOpen, setBlockLoginDialogOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [pendingAction, setPendingAction] = useState<{
     type: "suspend" | "activate" | "block" | "unblock"
     userId: string
     userName: string
     currentState: boolean
+  } | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<{
+    userId: string
+    userName: string
+    userEmail?: string | null
   } | null>(null)
   const router = useRouter()
 
@@ -43,6 +53,7 @@ export function AllUsersTab({ users }: AllUsersTabProps) {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         setCurrentUserId(user.id)
+        setCurrentUserEmail(user.email ?? null)
         // Obtener el perfil del usuario actual para verificar si es admin
         const { data: profile } = await supabase
           .from("profiles")
@@ -166,6 +177,63 @@ export function AllUsersTab({ users }: AllUsersTabProps) {
     }
   }
 
+  const handleVerifyEmail = async (userId: string) => {
+    setProcessingId(`${userId}-verify`)
+    try {
+      const response = await fetch("/api/admin/verify-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetUserId: userId }),
+      })
+      const result = await response.json().catch(() => ({}))
+
+      if (!response.ok || !result?.success) {
+        alert(result?.error || "No se pudo verificar el correo del usuario.")
+        return
+      }
+
+      router.refresh()
+    } catch (error) {
+      console.error("Error verifying user email:", error)
+    } finally {
+      setProcessingId(null)
+    }
+  }
+
+  const handleDeleteClick = (userId: string, userName: string, userEmail?: string | null) => {
+    setPendingDelete({ userId, userName, userEmail })
+    setDeleteDialogOpen(true)
+  }
+
+  const confirmDeleteAction = async () => {
+    if (!pendingDelete) return
+
+    setDeleteDialogOpen(false)
+    setProcessingId(`${pendingDelete.userId}-delete`)
+    try {
+      const response = await fetch("/api/admin/delete-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetUserId: pendingDelete.userId }),
+      })
+      const result = await response.json().catch(() => ({}))
+
+      if (!response.ok || !result?.success) {
+        alert(result?.error || "No se pudo eliminar el usuario.")
+        return
+      }
+
+      router.refresh()
+    } catch (error) {
+      console.error("Error deleting user:", error)
+    } finally {
+      setProcessingId(null)
+      setPendingDelete(null)
+    }
+  }
+
+  const isSuperAdmin = currentUserEmail === SUPER_ADMIN_EMAIL
+
   return (
     <>
       <div className="space-y-2">
@@ -193,6 +261,21 @@ export function AllUsersTab({ users }: AllUsersTabProps) {
                       <StatusIcon className="h-3 w-3 mr-1" />
                       {status.label}
                     </Badge>
+                  {user.email && (
+                    <Badge
+                      variant="secondary"
+                      className={
+                        (emailVerificationMap[user.id] || emailVerificationMap[user.email.toLowerCase()])
+                          ? "bg-emerald-100 text-emerald-800"
+                          : "bg-amber-100 text-amber-800"
+                      }
+                    >
+                      <Mail className="h-3 w-3 mr-1" />
+                      {(emailVerificationMap[user.id] || emailVerificationMap[user.email.toLowerCase()]) 
+                        ? "Email verificado" 
+                        : "Email sin verificar"}
+                    </Badge>
+                  )}
                     {user.is_active_player === false && (
                       <Badge variant="secondary" className="bg-amber-100 text-amber-800">
                         <UserX className="h-3 w-3 mr-1" />
@@ -210,7 +293,7 @@ export function AllUsersTab({ users }: AllUsersTabProps) {
               </div>
 
               {user.status === "approved" && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Button
                     onClick={() => toggleAdmin(user.id, user.is_admin)}
                     disabled={processingId === user.id || (user.is_admin && user.id === currentUserId) || user.email === 'admin@megia.eu'}
@@ -295,6 +378,43 @@ export function AllUsersTab({ users }: AllUsersTabProps) {
                       </>
                     )}
                   </Button>
+
+                  {!emailVerificationMap[user.id] && !emailVerificationMap[user.email?.toLowerCase() || ''] && (
+                    <Button
+                      onClick={() => handleVerifyEmail(user.id)}
+                      disabled={processingId === `${user.id}-verify`}
+                      variant="outline"
+                      size="sm"
+                      className="text-emerald-700"
+                    >
+                      <Mail className="h-4 w-4 mr-1" />
+                      Verificar correo
+                    </Button>
+                  )}
+
+                  {isSuperAdmin && (
+                    <Button
+                      onClick={() => handleDeleteClick(user.id, user.name, user.email)}
+                      disabled={
+                        processingId === `${user.id}-delete` ||
+                        user.id === currentUserId ||
+                        user.email === SUPER_ADMIN_EMAIL
+                      }
+                      variant="outline"
+                      size="sm"
+                      className="text-red-700 border-red-200 hover:bg-red-50"
+                      title={
+                        user.id === currentUserId
+                          ? "No puedes eliminar tu propio usuario"
+                          : user.email === SUPER_ADMIN_EMAIL
+                            ? "Este usuario es el super administrador y no puede ser eliminado"
+                            : undefined
+                      }
+                    >
+                      <XCircle className="h-4 w-4 mr-1" />
+                      Eliminar
+                    </Button>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -398,6 +518,34 @@ export function AllUsersTab({ users }: AllUsersTabProps) {
               }
             >
               {pendingAction?.type === "block" ? "Bloquear acceso" : "Habilitar acceso"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Diálogo de confirmación para eliminar usuario */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar usuario?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                Estás a punto de <strong>eliminar</strong> a <strong>{pendingDelete?.userName}</strong>.
+              </p>
+              <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-3 space-y-1 text-sm">
+                <p className="font-medium text-red-900 dark:text-red-100">Consecuencias:</p>
+                <ul className="list-disc list-inside space-y-1 text-red-800 dark:text-red-200">
+                  <li>Se eliminará su acceso a la aplicación</li>
+                  <li>Sus partidas se temporizarán como jugador invitado</li>
+                  <li>La acción no se puede deshacer</li>
+                </ul>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteAction} className="bg-red-600 hover:bg-red-700">
+              Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

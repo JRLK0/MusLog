@@ -15,6 +15,7 @@ interface AdminTabsProps {
   pendingMatches: Match[]
   activeSeason: Season | null
   closedSeasons: Season[]
+  emailVerificationMap: Record<string, boolean>
 }
 
 export function AdminTabs({
@@ -23,6 +24,7 @@ export function AdminTabs({
   pendingMatches,
   activeSeason,
   closedSeasons,
+  emailVerificationMap,
 }: AdminTabsProps) {
   const [activeTab, setActiveTab] = useState("pending-users")
   const [showScrollIndicator, setShowScrollIndicator] = useState(false)
@@ -96,7 +98,7 @@ export function AdminTabs({
       </TabsContent>
 
       <TabsContent value="all-users">
-        <UsersTab allUsers={allUsers} activeSeason={activeSeason} />
+        <UsersTab allUsers={allUsers} activeSeason={activeSeason} emailVerificationMap={emailVerificationMap} />
       </TabsContent>
 
       <TabsContent value="pending-matches">
