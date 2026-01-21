@@ -28,10 +28,11 @@ export function SeasonHistoryClient({ seasons, matches, profiles, seasonPlayers 
   // Calcular estadísticas para cada temporada
   const seasonStats = useMemo(() => {
     return seasons.map((season) => {
-      const seasonMatches = matches.filter((m) => m.season_id === season.id)
+      const allSeasonMatches = matches.filter((m) => m.season_id === season.id)
+      const validatedMatches = allSeasonMatches.filter((m) => m.status === "validated")
       const temps = seasonPlayers.filter((p) => p.season_id === season.id)
       const playersForSeason = [...profiles, ...temps.map((t) => ({ id: t.id, name: t.name }))]
-      const stats = calculateAllPlayerStats(seasonMatches, playersForSeason)
+      const stats = calculateAllPlayerStats(validatedMatches, playersForSeason)
       const activeStats = stats.filter((p) => p.total_matches > 0)
 
       // Ordenar por win rate y victorias
@@ -44,8 +45,8 @@ export function SeasonHistoryClient({ seasons, matches, profiles, seasonPlayers 
 
       return {
         season,
-        matches: seasonMatches,
-        totalMatches: seasonMatches.length,
+        matches: allSeasonMatches,
+        totalMatches: validatedMatches.length,
         playerStats: sortedStats,
       }
     })
@@ -91,7 +92,7 @@ export function SeasonHistoryClient({ seasons, matches, profiles, seasonPlayers 
         
         message += `${medal}*${player.name}*\n`
         message += `   ${player.wins} victorias - ${player.losses} derrotas\n`
-        message += `   Win Rate: ${player.win_rate.toFixed(0)}% (${player.total_matches} partidas)\n\n`
+        message += `   Partidas totales: ${player.total_matches}\n\n`
       })
     } else {
       message += `No hay partidas validadas en esta temporada.\n`
@@ -216,13 +217,10 @@ export function SeasonHistoryClient({ seasons, matches, profiles, seasonPlayers 
                         </Badge>
                       </div>
                       <div className="flex items-center gap-4">
-                        <div className="text-sm text-muted-foreground">
-                          <span className="font-medium text-emerald-600">{player.wins}</span>V -{" "}
-                          <span className="font-medium text-red-600">{player.losses}</span>D
-                        </div>
                         <div className="text-right">
-                          <div className="font-semibold">{player.win_rate.toFixed(0)}%</div>
-                          <div className="text-xs text-muted-foreground">Win Rate</div>
+                          <span className="text-base font-bold text-emerald-600">{player.wins}V</span>
+                          <span className="mx-1 text-muted-foreground">-</span>
+                          <span className="text-base font-bold text-red-600">{player.losses}D</span>
                         </div>
                       </div>
                     </div>

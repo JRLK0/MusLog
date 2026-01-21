@@ -55,3 +55,7 @@ CREATE POLICY "matches_delete_admin"
   USING (EXISTS (
     SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = TRUE
   ));
+
+
+
+

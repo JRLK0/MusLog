@@ -21,6 +21,7 @@ export default async function PartidasPage() {
       temp_player3:season_players!matches_temp_player3_id_fkey(id, name, season_id),
       temp_player4:season_players!matches_temp_player4_id_fkey(id, name, season_id),
       creator:profiles!matches_created_by_fkey(id, name),
+      canceled_by_profile:profiles!matches_canceled_by_fkey(id, name),
       season:seasons(id, name, is_active),
       validations:match_validations(
         id,
@@ -70,3 +71,4 @@ export default async function PartidasPage() {
     </div>
   )
 }
+

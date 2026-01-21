@@ -43,7 +43,9 @@ export interface Match {
   player3_id: string
   player4_id: string
   winner_team: 1 | 2
-  status: "pending" | "validated" | "rejected"
+  status: "pending" | "validated" | "rejected" | "canceled"
+  canceled_by?: string | null
+  canceled_at?: string | null
   team1_score: number
   team2_score: number
   season_id?: string | null
@@ -63,6 +65,7 @@ export interface Match {
   temp_player3?: SeasonPlayer
   temp_player4?: SeasonPlayer
   creator?: Profile
+  canceled_by_profile?: Profile
   season?: Season
   validations?: MatchValidation[]
 }
@@ -85,3 +88,7 @@ export interface PlayerStats {
   losses: number
   win_rate: number
 }
+
+
+
+

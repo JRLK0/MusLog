@@ -6,10 +6,11 @@ import type { Match, PlayerStats } from "./types"
 export function calculatePlayerStats(matches: Match[], playerId: string): PlayerStats {
   const playerMatches = matches.filter(
     (m) =>
-      m.player1_id === playerId ||
-      m.player2_id === playerId ||
-      m.player3_id === playerId ||
-      m.player4_id === playerId,
+      m.status === "validated" &&
+      (m.player1_id === playerId ||
+        m.player2_id === playerId ||
+        m.player3_id === playerId ||
+        m.player4_id === playerId),
   )
 
   const wins = playerMatches.filter((m) => {
@@ -53,6 +54,9 @@ export function calculateAllPlayerStats(
 
   // Calcular estadísticas basándose en las partidas
   matches.forEach((match) => {
+    // Solo contar partidas validadas (no pendientes, ni rechazadas, ni canceladas)
+    if (match.status !== "validated") return
+
     const playersInMatch = [
       { id: match.player1_id, name: match.player1?.name },
       { id: match.player2_id, name: match.player2?.name },

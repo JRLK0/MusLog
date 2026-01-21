@@ -57,7 +57,15 @@ export function MatchList({ matches, currentUserId, isAdmin, seasons, players }:
   const filteredMatches = useMemo(() => {
     return matches.filter((match) => {
       // Filtro de estado
-      if (filter !== "all" && match.status !== filter) return false
+      if (filter !== "all") {
+        if (filter === "validated") {
+          // Incluimos tanto 'validated' como 'canceled' en la pestaña de validadas
+          // pero el usuario puede ver la diferencia por el badge
+          if (match.status !== "validated" && match.status !== "canceled") return false
+        } else if (match.status !== filter) {
+          return false
+        }
+      }
 
       // Búsqueda de texto
       if (!matchesSearch(match, searchQuery)) return false
@@ -109,7 +117,7 @@ export function MatchList({ matches, currentUserId, isAdmin, seasons, players }:
   }, [matches, filter, searchQuery, selectedSeason, selectedPlayer, dateFrom, dateTo])
 
   const pendingCount = matches.filter((m) => m.status === "pending").length
-  const validatedCount = matches.filter((m) => m.status === "validated").length
+  const validatedCount = matches.filter((m) => m.status === "validated" || m.status === "canceled").length
 
   // Contar filtros activos
   const activeFiltersCount = [

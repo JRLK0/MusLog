@@ -7,13 +7,15 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
-import { CheckCircle, Clock, Trophy, XCircle, ChevronDown, Users, UserCheck, UserX, ChevronRight } from "lucide-react"
+import { CheckCircle, Clock, Trophy, XCircle, ChevronDown, Users, UserCheck, UserX, ChevronRight, Edit2 } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
+import Link from "next/link"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
@@ -42,6 +44,10 @@ export function MatchCard({ match, currentUserId, isAdmin }: MatchCardProps) {
   const router = useRouter()
 
   const isParticipant = [match.player1_id, match.player2_id, match.player3_id, match.player4_id].includes(currentUserId)
+  const isCreator = match.created_by === currentUserId
+  const canEdit = (isAdmin || (isParticipant || isCreator)) && match.status === "pending"
+  const canCancel = isAdmin && match.status !== "canceled"
+  const isCanceled = match.status === "canceled"
 
   const team1Players = [match.player1 || match.temp_player1, match.player2 || match.temp_player2]
   const team2Players = [match.player3 || match.temp_player3, match.player4 || match.temp_player4]
@@ -78,6 +84,11 @@ export function MatchCard({ match, currentUserId, isAdmin }: MatchCardProps) {
           ? `Validada por admin (jugadores que validaron: ${validatedPlayers.join(", ")})`
           : "Validada por admin")
     : null
+  const canceledByName = match.canceled_by_profile?.name || null
+  const canceledAtLabel = match.canceled_at
+    ? format(new Date(match.canceled_at), "d MMM yyyy, HH:mm", { locale: es })
+    : "fecha no registrada"
+  const canceledByLabel = canceledByName || "administrador"
 
   const handleValidate = async (asAdmin: boolean = false) => {
     setIsValidating(true)
@@ -106,6 +117,48 @@ export function MatchCard({ match, currentUserId, isAdmin }: MatchCardProps) {
     } finally {
       setIsValidating(false)
       setPendingValidationType(null)
+    }
+  }
+
+  const handleCancelMatch = async () => {
+    if (!confirm("¿Estás seguro de que quieres dar de baja esta partida?")) return
+
+    setIsValidating(true)
+    try {
+      console.log("Intentando dar de baja partida ID:", match.id)
+      const supabase = createClient()
+      const { data, error, status, statusText } = await supabase
+        .from("matches")
+        .update({ status: "canceled", canceled_by: currentUserId, canceled_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .eq("id", match.id)
+        .select()
+      
+      if (error) {
+        console.error("Supabase error detail:", error)
+        console.error("HTTP Status:", status, statusText)
+        throw error
+      }
+
+      if (!data || data.length === 0) {
+        console.warn("No se actualizó ninguna fila. Verificando RLS/Permisos.")
+        throw new Error("No tienes permiso para realizar esta acción o la partida no existe.")
+      }
+
+      console.log("Partida dada de baja con éxito:", data)
+      router.refresh()
+    } catch (error: any) {
+      console.error("Full error object:", error)
+      let errorMsg = "Error desconocido"
+      
+      if (error && typeof error === 'object') {
+        errorMsg = error.message || error.details || error.hint || JSON.stringify(error)
+      } else if (typeof error === 'string') {
+        errorMsg = error
+      }
+      
+      alert("Error al dar de baja la partida: " + errorMsg)
+    } finally {
+      setIsValidating(false)
     }
   }
 
@@ -159,16 +212,28 @@ export function MatchCard({ match, currentUserId, isAdmin }: MatchCardProps) {
     pending: { label: "Pendiente", icon: Clock, color: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400" },
     validated: { label: "Validada", icon: CheckCircle, color: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400" },
     rejected: { label: "Rechazada", icon: XCircle, color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" },
+    canceled: { label: "Dada de baja", icon: XCircle, color: "bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-400" },
   }
 
   const status = statusConfig[match.status]
   const StatusIcon = status.icon
+  const cardClassName = `border border-slate-200 dark:border-slate-700 shadow-md overflow-hidden transition-all duration-300 cursor-pointer ${
+    isCanceled
+      ? "bg-slate-50/80 dark:bg-slate-900/60 hover:shadow-md"
+      : "bg-white dark:bg-slate-900/50 hover:shadow-xl hover:scale-[1.01]"
+  }`
+
+  const headerClassName = `flex items-center justify-between px-4 py-3 border-b transition-all duration-200 ${
+    isCanceled
+      ? "bg-gradient-to-r from-slate-100/80 to-slate-200/60 dark:from-slate-900/40 dark:to-slate-900/20 border-slate-200/70 dark:border-slate-800/60 hover:from-slate-100 hover:to-slate-200/80 dark:hover:from-slate-900/50 dark:hover:to-slate-900/30"
+      : "bg-gradient-to-r from-blue-50/50 to-indigo-50/30 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-100/50 dark:border-blue-900/30 hover:from-blue-100/70 hover:to-indigo-100/50 dark:hover:from-blue-900/30 dark:hover:to-indigo-900/30"
+  }`
 
   return (
-    <Card className="border border-slate-200 dark:border-slate-700 shadow-md overflow-hidden hover:shadow-xl hover:scale-[1.01] transition-all duration-300 cursor-pointer bg-white dark:bg-slate-900/50" onClick={() => setIsExpanded(!isExpanded)}>
+    <Card className={cardClassName} onClick={() => setIsExpanded(!isExpanded)}>
       <CardContent className="p-0">
         {/* Header clickeable con resumen */}
-        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-50/50 to-indigo-50/30 dark:from-blue-950/20 dark:to-indigo-950/20 border-b border-blue-100/50 dark:border-blue-900/30 hover:from-blue-100/70 hover:to-indigo-100/50 dark:hover:from-blue-900/30 dark:hover:to-indigo-900/30 transition-all duration-200">
+        <div className={headerClassName}>
           <div className="flex items-center gap-3 flex-1 min-w-0" onClick={() => setIsExpanded(!isExpanded)}>
             <ChevronRight 
               className={`h-5 w-5 text-muted-foreground transition-transform flex-shrink-0 ${isExpanded ? 'rotate-90' : ''}`}
@@ -203,69 +268,73 @@ export function MatchCard({ match, currentUserId, isAdmin }: MatchCardProps) {
             </div>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-            {/* Botón de validación en vista compacta */}
-            {match.status === "pending" && (isParticipant || isAdmin) && !isExpanded && (
-              <>
-                {isAdmin && isParticipant && !hasCurrentUserValidated ? (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        disabled={isValidating}
-                        size="sm"
-                        className="bg-primary hover:bg-primary/90 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {isValidating ? "..." : "Validar"}
-                        <ChevronDown className="ml-1 h-3 w-3" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleValidateClick(false, true)
-                        }}
-                        disabled={isValidating}
-                      >
-                        Validar mi participación
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleValidateClick(true, true)
-                        }}
-                        disabled={isValidating}
-                      >
-                        Validar como admin
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                ) : isAdmin && !isParticipant ? (
+            {/* Botón de acciones en vista compacta */}
+            {!isExpanded && (isParticipant || isAdmin) && !isCanceled && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
                   <Button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleValidateClick(true, true)
-                    }}
                     disabled={isValidating}
                     size="sm"
                     className="bg-primary hover:bg-primary/90 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    {isValidating ? "..." : "Validar"}
+                    {isValidating ? "..." : "Acciones"}
+                    <ChevronDown className="ml-1 h-3 w-3" />
                   </Button>
-                ) : isParticipant && !hasCurrentUserValidated ? (
-                  <Button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleValidateClick(false, true)
-                    }}
-                    disabled={isValidating}
-                    size="sm"
-                    className="bg-primary hover:bg-primary/90 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200"
-                  >
-                    {isValidating ? "..." : "Validar"}
-                  </Button>
-                ) : null}
-              </>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  {match.status === "pending" && (
+                    <>
+                      {isParticipant && !hasCurrentUserValidated && (
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleValidateClick(false, true)
+                          }}
+                          disabled={isValidating}
+                        >
+                          <UserCheck className="mr-2 h-4 w-4" />
+                          Validar mi participación
+                        </DropdownMenuItem>
+                      )}
+                      {isAdmin && (
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleValidateClick(true, true)
+                          }}
+                          disabled={isValidating}
+                        >
+                          <CheckCircle className="mr-2 h-4 w-4" />
+                          Validar como admin
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
+                  {canEdit && (
+                    <DropdownMenuItem asChild>
+                      <Link href={`/partidas/editar/${match.id}`} onClick={(e) => e.stopPropagation()}>
+                        <Edit2 className="mr-2 h-4 w-4" />
+                        Editar partida
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  {canCancel && (
+                    <DropdownMenuItem
+                      className="text-red-600 dark:text-red-400"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleCancelMatch()
+                      }}
+                      disabled={isValidating}
+                    >
+                      <XCircle className="mr-2 h-4 w-4" />
+                      Dar de baja partida
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
             <Badge variant="secondary" className={`${status.color} font-semibold px-2 py-1`}>
               <StatusIcon className="h-3 w-3 mr-1" />
@@ -339,6 +408,18 @@ export function MatchCard({ match, currentUserId, isAdmin }: MatchCardProps) {
                 </p>
               </div>
 
+              {match.status === "canceled" && (
+                <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
+                  <div className="flex items-start gap-2">
+                    <XCircle className="h-4 w-4 text-slate-500 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Partida dada de baja</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Dada de baja por {canceledByLabel} el {canceledAtLabel}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Sección de validación */}
               {match.status === "validated" && validatedByInfo && (
                 <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
@@ -376,71 +457,121 @@ export function MatchCard({ match, currentUserId, isAdmin }: MatchCardProps) {
                 </div>
               )}
 
-              {/* Botones de validación */}
-              {match.status === "pending" && (isParticipant || isAdmin) && (
+              {/* Mostrar solo quién validó si está cancelada pero tenía validaciones */}
+              {match.status === "canceled" && validatedPlayers.length > 0 && (
                 <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-                  {isAdmin && isParticipant && !hasCurrentUserValidated ? (
-                    // Admin que participa y no ha validado: mostrar dropdown con ambas opciones
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          disabled={isValidating}
-                          size="default"
-                          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-sm"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {isValidating ? "Validando..." : "Validar"}
-                          <ChevronDown className="ml-2 h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-56">
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleValidateClick(false, false)
-                          }}
-                          disabled={isValidating}
-                        >
-                          Validar mi participación
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleValidateClick(true, false)
-                          }}
-                          disabled={isValidating}
-                        >
-                          Validar como admin
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  ) : isAdmin && !isParticipant ? (
-                    // Admin que no participa: solo puede validar como admin
-                    <Button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleValidateClick(true, false)
-                      }}
-                      disabled={isValidating}
-                      size="default"
-                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-sm"
-                    >
-                      {isValidating ? "Validando..." : "Validar como admin"}
-                    </Button>
-                  ) : isParticipant && !hasCurrentUserValidated ? (
-                    // Participante normal: validar participación
-                    <Button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleValidateClick(false, false)
-                      }}
-                      disabled={isValidating}
-                      size="default"
-                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-sm"
-                    >
-                      {isValidating ? "Validando..." : "Validar mi participación"}
-                    </Button>
-                  ) : null}
+                  <div className="flex items-start gap-2">
+                    <UserCheck className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-xs font-semibold text-slate-500 mb-1">Había sido validada por</p>
+                      <p className="text-xs text-slate-400">{validatedPlayers.join(", ")}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Botones de acción */}
+              {(match.status === "pending" || canEdit) && (isParticipant || isAdmin) && (
+                <div className="pt-2 border-t border-gray-200 dark:border-gray-700 space-y-2">
+                  <div className="flex gap-2">
+                    {match.status === "pending" && (
+                      <div className="flex-1">
+                        {isAdmin && isParticipant && !hasCurrentUserValidated ? (
+                          // Admin que participa y no ha validado: mostrar dropdown con ambas opciones
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                disabled={isValidating}
+                                size="default"
+                                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-sm"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {isValidating ? "Validando..." : "Validar"}
+                                <ChevronDown className="ml-2 h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-56">
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleValidateClick(false, false)
+                                }}
+                                disabled={isValidating}
+                              >
+                                <UserCheck className="mr-2 h-4 w-4" />
+                                Validar mi participación
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleValidateClick(true, false)
+                                }}
+                                disabled={isValidating}
+                              >
+                                <CheckCircle className="mr-2 h-4 w-4" />
+                                Validar como admin
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        ) : isAdmin && !isParticipant ? (
+                          // Admin que no participa: solo puede validar como admin
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleValidateClick(true, false)
+                            }}
+                            disabled={isValidating}
+                            size="default"
+                            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-sm"
+                          >
+                            {isValidating ? "Validando..." : "Validar como admin"}
+                          </Button>
+                        ) : isParticipant && !hasCurrentUserValidated ? (
+                          // Participante normal: validar participación
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleValidateClick(false, false)
+                            }}
+                            disabled={isValidating}
+                            size="default"
+                            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-sm"
+                          >
+                            {isValidating ? "Validando..." : "Validar mi participación"}
+                          </Button>
+                        ) : null}
+                      </div>
+                    )}
+                    
+                    {canEdit && (
+                      <Button
+                        asChild
+                        variant="outline"
+                        className={`flex-1 ${match.status === 'validated' ? 'w-full' : ''}`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Link href={`/partidas/editar/${match.id}`}>
+                          <Edit2 className="mr-2 h-4 w-4" />
+                          Editar Partida
+                        </Link>
+                      </Button>
+                    )}
+
+                    {canCancel && (
+                      <Button
+                        variant="outline"
+                        className="flex-1 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900/30 dark:text-red-400 dark:hover:bg-red-900/20"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleCancelMatch()
+                        }}
+                        disabled={isValidating}
+                      >
+                        <XCircle className="mr-2 h-4 w-4" />
+                        Dar de baja partida
+                      </Button>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -485,3 +616,10 @@ export function MatchCard({ match, currentUserId, isAdmin }: MatchCardProps) {
     </Card>
   )
 }
+
+
+
+
+
+
+
