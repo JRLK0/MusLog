@@ -1,0 +1,37 @@
+name: Supabase keep-alive
+
+on:
+  schedule:
+    # Cada 6 horas (más conservador para no gastar minutos de Actions)
+    # Ajusta si necesitas más frecuencia: "*/30 * * * *" = cada 30 min
+    - cron: "0 */6 * * *"
+  workflow_dispatch: {} # Para ejecutar manualmente desde GitHub
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping health endpoint
+        run: |
+          echo "🏓 Haciendo ping a Supabase..."
+          
+          # Cambia esta URL por tu dominio real de producción
+          HEALTH_URL="${{ vars.APP_URL || 'https://tu-dominio.vercel.app' }}/api/health"
+          
+          response=$(curl -fsS -w "\n%{http_code}" "$HEALTH_URL" 2>&1) || {
+            echo "❌ Error en la petición"
+            exit 1
+          }
+          
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          
+          echo "📡 Status: $http_code"
+          echo "📋 Response: $body"
+          
+          if [ "$http_code" -eq 200 ]; then
+            echo "✅ Supabase activo"
+          else
+            echo "❌ Health check falló"
+            exit 1
+          fi
