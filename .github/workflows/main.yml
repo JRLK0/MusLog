@@ -1,0 +1,41 @@
+name: Supabase keep-alive
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping health endpoint
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          echo "🏓 Haciendo ping a Supabase..."
+
+          if [ -z "$APP_URL" ]; then
+            APP_URL="https://tu-dominio.vercel.app"
+          fi
+
+          HEALTH_URL="${APP_URL%/}/api/health"
+          echo "🌐 URL: $HEALTH_URL"
+
+          response=$(curl -fsS -w "\n%{http_code}" "$HEALTH_URL" 2>&1) || {
+            echo "❌ Error en la petición"
+            exit 1
+          }
+
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+
+          echo "📡 Status: $http_code"
+          echo "📋 Response: $body"
+
+          if [ "$http_code" -eq 200 ]; then
+            echo "✅ Supabase activo"
+          else
+            echo "❌ Health check falló"
+            exit 1
+          fi
