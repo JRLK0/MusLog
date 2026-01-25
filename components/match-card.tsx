@@ -267,7 +267,11 @@ export function MatchCard({ match, currentUserId, isAdmin }: MatchCardProps) {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+          <div className="flex flex-col items-end gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+            <Badge variant="secondary" className={`${status.color} font-semibold px-2 py-1`}>
+              <StatusIcon className="h-3 w-3 mr-1" />
+              {status.label}
+            </Badge>
             {/* Botón de acciones en vista compacta */}
             {!isExpanded && (isParticipant || isAdmin) && !isCanceled && (
               <DropdownMenu>
@@ -336,10 +340,6 @@ export function MatchCard({ match, currentUserId, isAdmin }: MatchCardProps) {
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
-            <Badge variant="secondary" className={`${status.color} font-semibold px-2 py-1`}>
-              <StatusIcon className="h-3 w-3 mr-1" />
-              {status.label}
-            </Badge>
           </div>
         </div>
 
