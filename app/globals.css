@@ -168,4 +168,53 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  .podium-card {
+    position: relative;
+    padding: 1.25rem;
+    border-radius: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  }
+
+  .podium-gold {
+    background:
+      radial-gradient(circle at top, rgba(251, 191, 36, 0.35), transparent 60%),
+      linear-gradient(140deg, rgba(251, 191, 36, 0.25), rgba(245, 158, 11, 0.08));
+  }
+
+  .podium-silver {
+    background:
+      radial-gradient(circle at top, rgba(148, 163, 184, 0.35), transparent 60%),
+      linear-gradient(140deg, rgba(226, 232, 240, 0.2), rgba(148, 163, 184, 0.08));
+  }
+
+  .podium-bronze {
+    background:
+      radial-gradient(circle at top, rgba(217, 119, 6, 0.3), transparent 60%),
+      linear-gradient(140deg, rgba(217, 119, 6, 0.2), rgba(180, 83, 9, 0.1));
+  }
+
+  .podium-glow-first {
+    animation: podiumGlow 1.8s ease-in-out infinite;
+  }
+}
+
+@keyframes podiumGlow {
+  0% {
+    box-shadow:
+      0 0 16px rgba(251, 191, 36, 0.35),
+      0 0 28px rgba(245, 158, 11, 0.35);
+  }
+  50% {
+    box-shadow:
+      0 0 24px rgba(251, 191, 36, 0.6),
+      0 0 40px rgba(245, 158, 11, 0.5);
+  }
+  100% {
+    box-shadow:
+      0 0 16px rgba(251, 191, 36, 0.35),
+      0 0 28px rgba(245, 158, 11, 0.35);
+  }
 }

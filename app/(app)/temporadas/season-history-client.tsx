@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useCallback } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -8,8 +8,10 @@ import type { Season, Match, Profile, SeasonPlayer } from "@/lib/types"
 import { calculateAllPlayerStats } from "@/lib/season-stats"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
-import { Calendar, Trophy, Users, Award, Crown, Medal, Share2 } from "lucide-react"
+import { Calendar, Users, Award, Crown, Medal, Share2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { AnimatePresence, motion } from "framer-motion"
+import { PodiumIntro } from "@/components/podium-intro"
 
 interface SeasonHistoryClientProps {
   seasons: Season[]
@@ -24,6 +26,8 @@ export function SeasonHistoryClient({ seasons, matches, profiles, seasonPlayers 
   const [selectedSeasonId, setSelectedSeasonId] = useState<string>(
     activeSeason?.id || (closedSeasons.length > 0 ? closedSeasons[0].id : ""),
   )
+  const [showIntro, setShowIntro] = useState(true)
+  const handleIntroComplete = useCallback(() => setShowIntro(false), [])
 
   // Calcular estadísticas para cada temporada
   const seasonStats = useMemo(() => {
@@ -50,7 +54,7 @@ export function SeasonHistoryClient({ seasons, matches, profiles, seasonPlayers 
         playerStats: sortedStats,
       }
     })
-  }, [seasons, matches, profiles])
+  }, [seasons, matches, profiles, seasonPlayers])
 
   const getRankIcon = (index: number) => {
     if (index === 0) return <Crown className="h-4 w-4 text-amber-500" />
@@ -65,6 +69,10 @@ export function SeasonHistoryClient({ seasons, matches, profiles, seasonPlayers 
 
   const selectedSeason = seasons.find((s) => s.id === selectedSeasonId)
   const selectedStats = seasonStats.find((s) => s.season.id === selectedSeasonId)
+  const playerStats = selectedStats?.playerStats ?? []
+  const top3 = playerStats.slice(0, 3)
+  const restPlayers = playerStats.slice(3)
+  const showIntroSequence = showIntro && top3.length === 3
 
   const generateWhatsAppMessage = () => {
     if (!selectedSeason || !selectedStats) return ""
@@ -112,6 +120,11 @@ export function SeasonHistoryClient({ seasons, matches, profiles, seasonPlayers 
 
   return (
     <div className="p-4 space-y-6">
+      <AnimatePresence>
+        {showIntroSequence ? (
+          <PodiumIntro top3={top3} onComplete={handleIntroComplete} />
+        ) : null}
+      </AnimatePresence>
       <div>
         <h1 className="text-2xl font-bold mb-2">Temporada</h1>
         <p className="text-sm text-muted-foreground">Consulta las estadísticas de la temporada</p>
@@ -197,39 +210,51 @@ export function SeasonHistoryClient({ seasons, matches, profiles, seasonPlayers 
               </div>
             </div>
 
-            {selectedStats.playerStats.length > 0 && (
-              <div className="pt-4 border-t">
-                <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Ranking de Jugadores ({selectedStats.playerStats.length} jugadores)
-                </h4>
-                <div className="space-y-2">
-                  {selectedStats.playerStats.map((player, index) => (
-                    <div
-                      key={player.id}
-                      className="flex items-center justify-between p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        {getRankIcon(index)}
-                        <span className="font-medium">{player.name}</span>
-                        <Badge variant="secondary" className="text-xs">
-                          {player.total_matches} partidas
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <span className="text-base font-bold text-emerald-600">{player.wins}V</span>
-                          <span className="mx-1 text-muted-foreground">-</span>
-                          <span className="text-base font-bold text-red-600">{player.losses}D</span>
+            <AnimatePresence mode="wait">
+              {!showIntroSequence && playerStats.length > 0 ? (
+                <motion.div
+                  key="ranking"
+                  className="pt-4 border-t"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.4 }}
+                >
+                  <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Ranking de Jugadores ({playerStats.length} jugadores)
+                  </h4>
+                  <div className="space-y-2">
+                    {[...top3, ...restPlayers].map((player, index) => (
+                      <div
+                        key={player.id}
+                        className="flex items-center justify-between p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          {getRankIcon(index)}
+                          <span className="font-medium">{player.name}</span>
+                          <Badge variant="secondary" className="text-xs">
+                            {player.total_matches} partidas
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span className="text-xs font-medium text-muted-foreground">
+                            {player.win_rate.toFixed(1)}%
+                          </span>
+                          <div className="text-right">
+                            <span className="text-base font-bold text-emerald-600">{player.wins}V</span>
+                            <span className="mx-1 text-muted-foreground">-</span>
+                            <span className="text-base font-bold text-red-600">{player.losses}D</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+                    ))}
+                  </div>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
 
-            {selectedStats.totalMatches === 0 && (
+            {!showIntroSequence && selectedStats.totalMatches === 0 && (
               <div className="pt-4 border-t text-center text-sm text-muted-foreground">
                 No hay partidas validadas en esta temporada
               </div>
