@@ -1,8 +1,9 @@
 name: Supabase keep-alive
 
 on:
+  # Mínimo de GitHub: cada 5 min (cada 1 min no está permitido)
   schedule:
-    - cron: "* * * * *"
+    - cron: "*/5 * * * *"
   workflow_dispatch: {}
   push:
     branches:
